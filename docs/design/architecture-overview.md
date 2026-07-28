@@ -179,7 +179,7 @@ sequenceDiagram
   participant PG as Postgres
   participant R as Redis
   W->>A: PATCH flag (session cookie + CSRF + expected config version)
-  A->>PG: BEGIN; SET LOCAL app.current_org; UPDATE flag_env_config; INSERT audit;<br/>bump config + ruleset version; COMMIT
+  A->>PG: BEGIN · SET LOCAL app.current_org · UPDATE flag_env_config<br/>INSERT audit · bump config + ruleset version · COMMIT
   A-->>W: 200 (or 409 on version mismatch)
   A->>R: PUBLISH env:<id> changed vN   (Phase 2)
   Note over R,A: all nodes fan out over SSE (Phase 2)
