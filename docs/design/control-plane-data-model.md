@@ -1,6 +1,6 @@
 ---
 title: togglr — Control Plane & Data Model (Phase 1)
-status: draft
+status: approved
 owner: hapham
 date: 2026-07-28
 parent: docs/design/architecture-overview.md
@@ -72,7 +72,7 @@ erDiagram
 | `sdk_keys` | `id`, `organization_id`, `environment_id`, `prefix`, `key_hash`, `status` (`active`\|`revoked`), `expires_at` (nullable, for rotation grace), `last_used_at`, `created_at` | Secret shown once; only hash stored. |
 | `flags` | `id`, `organization_id`, `project_id`, `key`, `description`, `type` (`boolean` MVP), `archived_at` (nullable), `created_at` | Unique (`organization_id`,`project_id`,`key`). Definition lives at project scope. |
 | `flag_env_configs` | `id`, `organization_id`, `flag_id`, `environment_id`, `enabled bool`, `default_variation jsonb`, `rules jsonb not null default '[]'`, `config_version int not null default 0`, `updated_at` | Per-(flag,environment) state. **`rules`** = ordered array `[{conditions:[{attribute,operator,values[]}], result}]`, where `result` is a variation or `{percentage, bucketBy, variation}` — the exact shape `eval-core` consumes. **`config_version`** drives optimistic concurrency. Unique (`flag_id`,`environment_id`). |
-| `audit_logs` | `id`, `organization_id`, `actor_user_id`, `action`, `target_type`, `target_id`, `environment_id`, `before jsonb`, `after jsonb`, `created_at` | Append-only; no UPDATE/DELETE. Surfaced in Phase 4. |
+| `audit_logs` | `id`, `organization_id`, `actor_user_id`, `action`, `target_type`, `target_id`, `environment_id`, `before jsonb`, `after jsonb`, `created_at` | Append-only, enforced by `REVOKE UPDATE, DELETE ON audit_logs FROM togglr_app` (structural, not convention). Surfaced in Phase 4. |
 
 Sessions are **not** in Postgres — they live in Redis (see Auth).
 
@@ -83,11 +83,13 @@ Mechanism per [ADR: RLS tenant isolation](adr-rls-tenant-isolation.md):
 - Migrations (privileged role) enable RLS and create a policy on every tenant table:
   ```sql
   ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
-  CREATE POLICY tenant_isolation ON projects
-    USING (organization_id = current_setting('app.current_org')::uuid)
-    WITH CHECK (organization_id = current_setting('app.current_org')::uuid);
+  CREATE POLICY tenant_isolation ON projects FOR ALL
+    USING (organization_id = current_setting('app.current_org', true)::uuid)
+    WITH CHECK (organization_id = current_setting('app.current_org', true)::uuid);
   ```
-  (`organizations` uses `id = current_setting('app.current_org')::uuid`.)
+  (`organizations` uses `id = current_setting('app.current_org', true)::uuid`.) The `true`
+  (missing_ok) makes an unset context read as NULL, so a missing preamble yields 0 rows
+  rather than erroring — the fail-closed behavior the tests and error table rely on.
 - The API connects as role `togglr_app` — **not** superuser, **not** `BYPASSRLS`.
 - A `TransactionRunner` (NestJS interceptor + AsyncLocalStorage) opens a transaction per
   tenant request, runs `SET LOCAL app.current_org = $orgId`, exposes the transaction
@@ -132,12 +134,17 @@ tenant-data leak and that domain errors map to correct status codes.
   `SameSite=Lax` is defense-in-depth, the token is the primary control.
 - **Revocation:** logout deletes the session key; "revoke all" deletes all of a user's
   sessions (tracked via a `user_sessions:<userId>` set). Instant because lookups are
-  server-side.
+  server-side. The set is pruned on logout and validated on read — members whose
+  `session:<token>` has already lapsed via idle TTL are dropped — so it never accumulates
+  dead tokens.
 - **Invite-accept hook:** validates an invite token, creates/links the `users` row, and
   hands off to Org Workspace to create the membership.
 - **Email verification:** deferred for MVP — invite emails are already trusted, so sign-up
   creates an active account directly. Invite email is delivered locally via **Mailhog** in
   docker-compose.
+- **Password reset:** deferred for MVP alongside email verification (portfolio scope). The
+  Mailhog + hashed-token machinery used for invites makes an email-based reset a
+  straightforward later addition; until then an owner can re-invite a locked-out member.
 
 ### OrgModule (Org Workspace & Isolation)
 - CRUD for organizations, projects, environments; membership + role management.
@@ -232,6 +239,7 @@ Recorded from design review (previously open):
 
 - Sessions: **30 min idle**, **12 h absolute** lifetime.
 - Sign-up email verification: **deferred** for MVP (invites carry a trusted email).
+- Password reset: **deferred** for MVP (reuses the invite email/token machinery when added).
 - Invite email delivery in dev: **Mailhog** in docker-compose.
 - SDK-key rotation grace window: **24 h**, configurable.
 - Flag keys: **immutable** after creation, pattern `^[a-z0-9-]+$`.

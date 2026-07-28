@@ -1,6 +1,6 @@
 ---
 title: ADR — Real-Time Transport: SSE + Redis Pub/Sub
-status: proposed
+status: accepted
 owner: hapham
 date: 2026-07-28
 parent: docs/design/architecture-overview.md
@@ -10,7 +10,7 @@ parent: docs/design/architecture-overview.md
 
 ## Status
 
-Proposed
+Accepted
 
 ## Context
 
@@ -46,6 +46,9 @@ fallback where intermediaries block long-lived streams.
 - **Cons:** One-way only (irrelevant here); some proxies buffer/kill long-lived
   connections (handled by heartbeats + polling fallback); limited concurrent connections
   per browser origin over HTTP/1.1 (irrelevant for a server SDK; fine for one dashboard).
+- **Operational defaults (Phase 2, feel-tested):** ~15 s SSE heartbeat/keepalive to defeat
+  idle-proxy buffering; the client treats the stream as dead after ~2 missed heartbeats and
+  reconnects. Starting values, tuned once real streams exist.
 
 #### Option 1b: WebSocket
 
@@ -96,6 +99,11 @@ per-environment version**, and on (re)connect the client sends its version and t
 replies with the current ruleset if stale. Redis provides *speed*; the version check
 provides *correctness*.
 
+To keep that backstop live even under a healthy-SSE/dead-subscription partition, each node
+treats its Redis subscription as a **liveness dependency**: on losing the subscription it
+closes its SSE streams so clients reconnect to a healthy node and version-check. SDKs also
+run a **low-frequency version poll while SSE is connected** as belt-and-suspenders.
+
 ## Consequences
 
 ### Positive
@@ -109,9 +117,14 @@ provides *correctness*.
   code paths to maintain in the SDK.
 - Pub/Sub's at-most-once delivery means the version-check reconciliation is mandatory, not
   optional.
+- A single env change nudges every SDK on that env to conditional-GET at once (each receives
+  a 200 with the new ruleset) — a fan-in spike. Bounded at ~1k connections and absorbed by
+  the Phase-2 Redis ruleset cache (one cache read per node; ETag/304 for unchanged envs).
 
 ### Risks
-- A node partitioned from Redis silently stops fanning out; mitigated by SDK reconnect +
-  version check and by monitoring subscription health. Reversible: the client contract
-  (versioned ruleset + fetch endpoint) is transport-agnostic, so swapping SSE for
-  WebSocket later would not change the SDK's freshness model.
+- A node partitioned from Redis silently stops fanning out; mitigated by the
+  subscription-liveness rule in the Decision (the node drops its SSE streams on subscription
+  loss so clients reconnect to a healthy node and version-check) plus the SDK's low-frequency
+  version poll. Reversible: the client contract (versioned ruleset + fetch endpoint) is
+  transport-agnostic, so swapping SSE for WebSocket later would not change the SDK's
+  freshness model.

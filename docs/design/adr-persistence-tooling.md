@@ -1,6 +1,6 @@
 ---
 title: ADR — Persistence Tooling: Kysely
-status: proposed
+status: accepted
 owner: hapham
 date: 2026-07-28
 parent: docs/design/architecture-overview.md
@@ -10,7 +10,7 @@ parent: docs/design/architecture-overview.md
 
 ## Status
 
-Proposed
+Accepted
 
 ## Context
 

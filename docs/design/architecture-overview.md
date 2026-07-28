@@ -1,6 +1,6 @@
 ---
 title: togglr — System Architecture Overview
-status: draft
+status: approved
 owner: hapham
 date: 2026-07-28
 parent: docs/specs/togglr-platform.md
@@ -123,13 +123,15 @@ The word "version" means two different things; conflating them thrashes the desi
 
 | Concept | Scope | Monotonic? | Drives |
 | --- | --- | --- | --- |
-| **Config version** | per flag | bumped per flag write | Optimistic-concurrency 409s in Flag Authoring |
+| **Config version** | per (flag, environment) | bumped per flag-env write | Optimistic-concurrency 409s in Flag Authoring |
 | **Ruleset version** | per environment | monotonically increasing on *any* change in the env | SDK freshness/version-check, the Real-Time signal payload, and the stamp on telemetry events |
 
 Ruleset version is a **per-environment integer counter** (simple, cheaply comparable,
 human-readable in logs; ULIDs were considered — see the Ruleset seam doc). A flag write
-bumps its own config version *and* the environment ruleset version in the same
-transaction.
+bumps that flag's per-environment config version *and* the environment ruleset version in
+the same transaction. Because ruleset version is a single per-environment row, concurrent
+writes within one environment serialize on it — an accepted tradeoff at portfolio scale
+(detailed in the Control Plane doc).
 
 ### 3. `eval-core` boundary
 
@@ -162,6 +164,10 @@ forward-compatible.
 Authorization in v1 is coarse org roles (owner/admin/member); every request is
 org-scoped and RLS-enforced regardless of role.
 
+Abuse controls (login brute-force throttling, per-SDK-key/endpoint rate limiting) are
+deferred with production hardening — not built in Phase 1, but the single API ingress
+does not preclude adding them later.
+
 ## Key Data Flows
 
 ### Write path (admin toggles a flag)
@@ -173,7 +179,7 @@ sequenceDiagram
   participant PG as Postgres
   participant R as Redis
   W->>A: PATCH flag (session cookie + CSRF + expected config version)
-  A->>PG: BEGIN; SET LOCAL app.current_org; UPDATE flag; INSERT audit;<br/>bump config + ruleset version; COMMIT
+  A->>PG: BEGIN; SET LOCAL app.current_org; UPDATE flag_env_config; INSERT audit;<br/>bump config + ruleset version; COMMIT
   A-->>W: 200 (or 409 on version mismatch)
   A->>R: PUBLISH env:<id> changed vN   (Phase 2)
   Note over R,A: all nodes fan out over SSE (Phase 2)

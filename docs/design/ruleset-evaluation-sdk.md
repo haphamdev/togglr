@@ -1,6 +1,6 @@
 ---
 title: togglr — Ruleset & Evaluation Engine + SDK (Phase 1)
-status: draft
+status: approved
 owner: hapham
 date: 2026-07-28
 parent: docs/design/architecture-overview.md
@@ -90,13 +90,21 @@ interface EvaluationContext {
 interface EvaluationResult {
   value: Variation;
   reason: 'RULE_MATCH' | 'ROLLOUT' | 'DEFAULT' | 'FLAG_OFF'
-        | 'FLAG_NOT_FOUND' | 'SDK_NOT_READY' | 'MISSING_KEY';
+        | 'FLAG_NOT_FOUND' | 'SDK_NOT_READY' | 'MISSING_KEY' | 'TYPE_MISMATCH';
 }
 ```
 
 `schemaVersion` lets an older SDK detect a payload it cannot fully parse and degrade
 gracefully (serve what it understands / hold last-known) rather than crash — forward
 compatibility for the evolving shape.
+
+`TYPE_MISMATCH` is produced only by the typed convenience layer (`evaluateBool`/etc.), never
+by `eval-core` — the core returns the raw `Variation` and the wrapper checks the type. In the
+boolean-only MVP every variation is boolean, so this path stays dormant until multivariate.
+
+On **first** bootstrap, an unparseable newer `schemaVersion` leaves no last-known ruleset, so
+the SDK stays not-ready and `evaluate()` returns caller defaults (`SDK_NOT_READY`) until a
+compatible payload arrives — a safe, if silent, degradation.
 
 ## Version Model & Fetch Endpoint (Ruleset Delivery & Contract)
 
@@ -151,7 +159,11 @@ function evaluate(ruleset: Ruleset | undefined,
 5. No rule matched → `{ defaultVariation, DEFAULT }`.
 
 Condition operators (MVP): `equals`, `not-equals`, `in`, `not-in` — compared against the
-context attribute value; a missing attribute never matches a positive operator. If a
+context attribute value. **A missing attribute makes the condition false for *every* operator**,
+positive and negative alike: the rule requires the attribute to be present and satisfy the
+operator, so `country not-in [US]` does **not** fire for a context with no `country`. (This is
+a deliberate, predictable choice — it avoids negative rules silently enabling flags for every
+context lacking the attribute; revisit if a "match when absent" operator is ever needed.) If a
 rollout was skipped solely because `bucketBy` was missing and nothing else matched, the
 result reason is surfaced as `MISSING_KEY` (still returns the flag default) so the
 preview and telemetry can distinguish it.
@@ -160,7 +172,7 @@ preview and telemetry can distinguish it.
 
 ```
 bucket(flagKey, bucketByValue) =
-  int(first 8 hex chars of sha256(`${flagKey}:${bucketByValue}`)) / 0xffffffff * 100
+  int(first 8 hex chars of sha256(`${flagKey}:${bucketByValue}`)) / 0x100000000 * 100
 → a stable float in [0, 100)
 ```
 

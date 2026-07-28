@@ -1,6 +1,6 @@
 ---
 title: ADR — Tenant Isolation via Postgres RLS with Session-Variable Context
-status: proposed
+status: accepted
 owner: hapham
 date: 2026-07-28
 parent: docs/design/architecture-overview.md
@@ -10,7 +10,7 @@ parent: docs/design/architecture-overview.md
 
 ## Status
 
-Proposed
+Accepted
 
 ## Context
 
@@ -33,8 +33,11 @@ Forces at play:
 
 ### Option 1: Postgres RLS + per-request `SET LOCAL` session variable (Chosen)
 
-- **Approach:** Every tenant-scoped table has `organization_id` and an RLS policy
-  `USING (organization_id = current_setting('app.current_org')::uuid)`. The API connects
+- **Approach:** Every tenant-scoped table has `organization_id` and an RLS policy applied
+  `FOR ALL`: `USING (organization_id = current_setting('app.current_org', true)::uuid)` and
+  `WITH CHECK (organization_id = current_setting('app.current_org', true)::uuid)`. The `true`
+  (missing_ok) makes an unset context read as NULL → zero rows (not an error); `WITH CHECK`
+  blocks INSERT/UPDATE from writing rows stamped with another org's id. The API connects
   as a **non-privileged role that does not have `BYPASSRLS`**. Each request runs inside a
   transaction that first executes `SET LOCAL app.current_org = $orgId` (resolved from the
   authenticated session or SDK key). `SET LOCAL` is scoped to the current transaction, so
@@ -47,8 +50,8 @@ Forces at play:
 - **Cons:** Every tenant-scoped operation must run in a transaction with the `SET LOCAL`
   preamble — needs a disciplined data-access seam (a per-request transactional runner);
   the app DB role must never be a superuser/`BYPASSRLS` (RLS is silently skipped for
-  those); a missing preamble fails closed (no rows) rather than leaking, which is the
-  right failure direction but must be understood.
+  those); a missing preamble fails closed (no rows, via the `missing_ok` policy form) rather
+  than leaking, which is the right failure direction but must be understood.
 
 ### Option 2: Application-level scoping only (`WHERE organization_id = ?`, no DB RLS)
 
@@ -100,3 +103,15 @@ nodes.
   single sanctioned data-access seam and code-review checklist.
 - Superuser/migration connections legitimately bypass RLS; migrations run as a separate
   privileged role, never the request-path role. Documented in the Control Plane doc.
+- Bootstrap operations without a prior org context (org creation, plus the global
+  `users`/login/invite-token/SDK-key paths) are handled explicitly: org creation issues
+  `SET LOCAL app.current_org = <new org id>` in the same transaction so the initial
+  `WITH CHECK` passes, and non-tenant tables (`users`) carry no RLS. Detailed in the
+  Control Plane doc.
+
+## Reversal cost
+
+Moderate but mechanical: reversing means dropping the policies, relaxing the DB role, and
+removing the `SET LOCAL` preamble from the transactional runner — one isolated data-access
+layer, not scattered call sites. Application-level `WHERE organization_id` scoping (Option 2)
+would then have to replace it everywhere, which is exactly the fragility this ADR avoids.
