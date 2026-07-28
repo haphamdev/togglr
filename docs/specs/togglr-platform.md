@@ -40,7 +40,7 @@ real time — while consumer applications embed a lightweight SDK that evaluates
 
 ## Target Users
 
-togglr serves **software teams**, mediated by two personas:
+togglr serves **software teams**, mediated by two primary personas (plus an operator):
 
 1. **Flag Administrator** (engineer, EM, or product manager)
    — signs up an organization, invites teammates, creates projects/environments,
@@ -67,7 +67,7 @@ tenant-isolated by construction, and horizontally scalable.
 | Goal                                     | Metric                                                         | Target                                                                          |
 | ---------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------- |
 | Fast evaluation on the consumer hot path | p99 in-process `evaluate()` latency in the SDK                 | < 5 ms (target sub-millisecond for cached rulesets)                             |
-| Real-time invalidation                   | Time from admin toggle → SDK serves new value (same region)    | < 1 s p95                                                                       |
+| Real-time invalidation                   | Time from admin toggle → SDK serves new value (same region)    | < 1 s p95 (Phase 2; Phase 1 uses polling with a looser bound)                    |
 | Tenant isolation                         | Cross-tenant data reads/writes possible via the API            | 0 (enforced by Postgres RLS; proven by tests)                                   |
 | Consumer resilience                      | SDK behavior when togglr API is unreachable                    | Serves last-known ruleset; no exceptions thrown to host app                     |
 | Throughput                               | Flag evaluations served without extra API calls                | Unbounded (evaluation is local; API load scales with SDK count, not eval count) |
@@ -147,6 +147,14 @@ what makes sub-5ms trivially achievable and makes the engine unit-testable in
 isolation. The identical engine runs both in the SDK (primary path) and server-side
 (for the web app preview / debugger).
 
+**Evaluation contract (SDK):** `evaluate(flagKey, context, defaultValue)` — the caller
+always supplies a `defaultValue`. The call **never throws into the host application**;
+it returns `defaultValue` for any of: unknown flag key, SDK not yet finished
+bootstrapping its ruleset, or a context missing the required `key`. This is what makes
+the resilience guarantee (see Goals) hold at the API level. A typed convenience layer
+(`evaluateBool` / `evaluateString` / `evaluateJson` with type-checked defaults) is a
+later refinement.
+
 ### Evaluation architecture (local evaluation, "Model B")
 
 The SDK does **not** ask the API for a value per check. On startup it authenticates
@@ -217,6 +225,12 @@ before/after snapshot. The admin can view a flag's **version history** and perfo
 **one-click rollback** to any prior version, which is itself recorded as a new change
 (and propagates in real time like any other change). This makes "undo the bad toggle"
 a single, safe, audited action.
+
+**Concurrent edits** use **optimistic concurrency**: every mutation carries the
+**expected current version**; if it no longer matches (another admin or a rollback
+changed the config first), the API rejects with a **409 Conflict** and the client
+re-fetches and retries. This keeps the version/audit chain linear and prevents silent
+clobbering during live multi-admin editing.
 
 ### Web application (admin dashboard)
 
@@ -292,7 +306,7 @@ org-scoped and enforced by Postgres RLS regardless of role.
 
 2. **Integrate & evaluate (Consumer Application)**
    `const togglr = new Togglr({ sdkKey })` → SDK fetches+caches the prod ruleset →
-   host code calls `togglr.evaluate("new-checkout-ui", { key: userId, plan })` →
+   host code calls `togglr.evaluate("new-checkout-ui", { key: userId, plan }, false)` →
    returns locally in sub-5ms → SDK asynchronously reports the evaluation as
    telemetry.
 
@@ -345,3 +359,19 @@ org-scoped and enforced by Postgres RLS regardless of role.
       storage choice (Postgres rollups vs a time-series store) — deferred to Phase 3.
 - [ ] **Target scale for the load test** that validates the <5ms / <1s claims — what
       numbers do we commit to demonstrating (e.g. N SDKs, M evals/sec)?
+- [ ] **RLS enforcement mechanism (design-doc handoff)** — the technical design must
+      specify a tenant-context approach that is safe under connection pooling
+      (transaction-scoped context, dedicated non-privileged DB role) plus a test that
+      reuses a pooled connection across two orgs. Kept out of this product spec on purpose.
+- [ ] **Percentage-rollout bucketing** — support a `bucketBy` attribute (default =
+      context `key`) so cohorts can flip together (e.g. by org)? And what is the behavior
+      when the context has no `key` (anonymous)?
+- [ ] **Multivariate rollout distribution** — weighted variation splits (not a single
+      on/off bucket) once multivariate lands; resolve alongside the multivariate-phase
+      question above.
+- [ ] **SDK key rotation semantics** — grace window (old + new valid) vs instant
+      invalidation that drops live streams?
+- [ ] **Flag lifecycle** — archival/deletion, and confirmation that a live SDK returns
+      the caller's `defaultValue` for a deleted flag key still referenced in host code.
+- [ ] **Telemetry event shape** — pin the per-evaluation event fields now (flagKey,
+      variation, timestamp, latency bucket) so Phase 1 SDKs emit forward-compatible data.
