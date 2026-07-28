@@ -22,3 +22,6 @@ lerna-debug.log*
 # temp directory
 .temp
 .tmp
+
+# Fram Workflow - personal AI config (local to each team member)
+.omp/personal/
