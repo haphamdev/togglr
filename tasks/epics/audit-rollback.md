@@ -28,7 +28,7 @@ good state; day-to-day it's the audit trail that makes multi-admin editing trust
 
 ### Excluded
 
-- The mutation/audit-write plumbing itself (Flag Configuration writes audit records from
+- The mutation/audit-write plumbing itself (Flag Authoring writes audit records from
   day one; this epic adds history UI + rollback on top).
 - Reusable segments and expanded targeting operators (Segments & Advanced Targeting epic).
 - Per-field/per-rule granular restore (whole-flag snapshot only).
@@ -37,11 +37,14 @@ good state; day-to-day it's the audit trail that makes multi-admin editing trust
 
 ## Dependencies
 
-- **Flag Configuration** — provides the versioned mutations and audit records this epic
+- **Platform Foundation** — monorepo, shared infra.
+- **Flag Authoring** — provides the versioned mutations and audit records this epic
   surfaces and reverts; reuses the optimistic-concurrency mechanism.
 - **Auth & Sessions** + **Org Workspace & Isolation** — history and rollback are
   RLS-scoped and role-gated.
-- **Real-Time Propagation** — a rollback should propagate live like any other change.
+- **Real-Time Propagation** *(soft)* — once it lands, a rollback propagates live like any
+  other change; not a hard dependency (in Phase 1 a rollback propagates via the existing
+  polling refresh).
 
 ## Acceptance Criteria (Epic-Level)
 

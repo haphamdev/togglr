@@ -24,6 +24,9 @@ asynchronously, so telemetry never taxes the sub-5ms evaluation promise.
   non-blocking, sampling/backpressure aware).
 - **Event shape (locked):** `flagKey`, `variation`, ruleset `version`, `timestamp`,
   bucketed `latency`, `errorFlag` — no raw evaluation context leaves the host (privacy-safe).
+- **"Error" defined:** an evaluation counts as an error when the SDK cannot resolve a
+  real variation and serves the caller default — flag-missing, not-ready, or
+  type-mismatch. The SDK never throws, so error-rate = default-served rate.
 - Ingestion endpoint that accepts batched evaluation events.
 - **Aggregation into Postgres rollup tables on ingest**, per flag/variation/environment
   time bucket.
@@ -40,9 +43,11 @@ asynchronously, so telemetry never taxes the sub-5ms evaluation promise.
 
 ## Dependencies
 
+- **Platform Foundation** — monorepo, shared infra.
 - **Local-Evaluation SDK** — the evaluate path is where events originate; the emission
   hook is designed there.
-- **Flag Configuration** — metrics are keyed by flag/variation/environment.
+- **Flag Authoring** — metrics are keyed by flag/variation/environment.
+- **Ruleset Delivery & Contract** — events are stamped with the environment ruleset version.
 - **Auth & Sessions** + **Org Workspace & Isolation** — ingestion is authenticated (SDK
   key) and org-scoped; dashboards are RLS-scoped.
 

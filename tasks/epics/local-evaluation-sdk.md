@@ -25,8 +25,8 @@ real.
 - SDK bootstrap: authenticate with an environment SDK key, fetch + cache the ruleset.
   Non-blocking startup with an optional `waitForReady({ timeout })`; until the first
   successful fetch, `evaluate()` returns caller defaults (never blocks host boot).
-- The pure, I/O-free evaluation engine: `(ruleset, context) → variation`, shared logic
-  reusable server-side for the web preview/debugger.
+- Consumes the shared evaluation engine (`packages/eval-core`): the SDK owns bootstrap,
+  caching, and refresh — not the engine algorithm, which is shared with the API preview.
 - Public API: `evaluate(flagKey, context, defaultValue)` plus `evaluateBool` in MVP —
   never throws; returns the default for unknown-flag / not-ready / missing-`key`.
   (`evaluateString`/`evaluateJson` arrive with multivariate in Phase 2.)
@@ -48,7 +48,9 @@ real.
 
 ## Dependencies
 
-- **Flag Configuration** — consumes the ruleset-fetch endpoint and the ruleset shape.
+- **Platform Foundation** — monorepo, shared-types, `eval-core`.
+- **Ruleset Delivery & Contract** — consumes the ruleset-fetch endpoint, ruleset shape,
+  and version model.
 - **Org Workspace & Isolation** — authenticates via per-environment SDK keys.
 
 ## Acceptance Criteria (Epic-Level)

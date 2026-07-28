@@ -21,11 +21,13 @@ every later epic.
 ### Included
 
 - pnpm-workspaces monorepo: `apps/api` (NestJS), `apps/web` (React SPA), `packages/sdk`,
-  `packages/shared-types`.
+  `packages/shared-types`, `packages/eval-core` (shared evaluation engine).
 - Biome configured as the single lint/format source of truth; TypeScript strict across
   all packages.
-- `packages/shared-types` skeleton: the DTO/ruleset/evaluation-context contracts shared
-  by API, web, and SDK (filled in as epics land).
+- `packages/shared-types` skeleton: the DTO/ruleset/evaluation-context/version contracts
+  shared by API, web, and SDK (filled in as epics land).
+- `packages/eval-core` skeleton: the pure, shared evaluation engine consumed by both the
+  SDK and the API server-side preview (algorithm filled in by later epics).
 - Base NestJS app: bootstraps, health check, config/env loading, Postgres + Redis
   connection wiring (no domain modules yet).
 - Web app shell: Vite + React Router + TanStack Query + Tailwind/shadcn, an app layout,

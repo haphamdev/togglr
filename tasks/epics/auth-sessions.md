@@ -40,6 +40,7 @@ on mutations. Nothing in the dashboard is safe to build until this holds.
 
 ## Dependencies
 
+- **Platform Foundation** — monorepo, shared-types, base API + web shell.
 - Infrastructure: a togglr-owned Redis instance (session store).
 - Downstream: Org Workspace & Isolation and every management action depend on an
   authenticated session.

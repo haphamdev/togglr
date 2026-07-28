@@ -27,21 +27,22 @@ rather than copy-pasted, and keeps rule definitions DRY across a growing flag se
 - Expanded targeting-operator library beyond the MVP core (`equals`/`not-equals`/`in`/
   `not-in`): e.g. string `contains`/`starts-with`/`ends-with`, numeric comparisons,
   semver comparison — final set per the open question.
-- Evaluation-engine + ruleset support for resolving segment references and new operators
-  (SDK and server-side preview stay in sync).
+- `eval-core` engine + ruleset-shape support for resolving segment references and new
+  operators (SDK and server-side preview stay in sync via the shared engine).
 
 ### Excluded
 
-- The MVP rule engine and core operators (Flag Configuration epic).
+- The MVP rule engine and core operators (Flag Authoring epic).
 - Audit/rollback of segment changes beyond the standard audit plumbing.
 - Approval workflows.
 
 ## Dependencies
 
-- **Flag Configuration** — extends the rule model and ruleset shape; rules gain a
-  segment-reference condition type.
-- **Local-Evaluation SDK** — the evaluation engine must resolve segment references and
-  the new operators locally (ruleset carries segment definitions).
+- **Platform Foundation** — `eval-core`, shared-types.
+- **Flag Authoring** — extends the rule model; rules gain a segment-reference condition type.
+- **Ruleset Delivery & Contract** — extends the ruleset shape to carry segment definitions.
+- **`eval-core` (shared engine)** — must resolve segment references and new operators
+  locally; SDK and server preview both consume it (ruleset carries segment definitions).
 - **Auth & Sessions** + **Org Workspace & Isolation** — segments are org/project-scoped
   and RLS-enforced; management is role-gated.
 

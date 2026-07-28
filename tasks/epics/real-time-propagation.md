@@ -40,12 +40,15 @@ under load.
 ### Excluded
 
 - The polling refresh itself (built in the SDK epic; here it is demoted to fallback).
-- Flag configuration and management (Flag Configuration epic).
+- Flag authoring and management (Flag Authoring epic).
 - Telemetry (Telemetry & Analytics epic).
 
 ## Dependencies
 
-- **Flag Configuration** — mutations are the events being propagated.
+- **Platform Foundation** — monorepo, shared infra.
+- **Flag Authoring** — mutations are the events being propagated.
+- **Ruleset Delivery & Contract** — provides the ruleset version (signal payload) and the
+  fetch endpoint the SDK refetches from.
 - **Local-Evaluation SDK** — the streaming path replaces/augments its polling refresh.
 - **Auth & Sessions** + **Org Workspace & Isolation** — SSE connections are
   authenticated and environment-scoped.

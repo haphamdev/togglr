@@ -27,7 +27,8 @@ what this epic establishes.
   joins the org with a role (account creation/linking handled by Auth & Sessions).
 - Per-environment SDK secret keys: issue, list, revoke, and **rotate with a grace
   window** (old + new keys both valid for a configurable period for zero-downtime
-  rotation).
+  rotation); and **validate** inbound SDK-key authentication — the guard consumed by
+  Ruleset Delivery, Real-Time, and Telemetry.
 - PostgreSQL row-level security on every tenant-scoped table; per-request org context.
 - Cross-tenant isolation integration tests (assert zero cross-tenant rows, including
   pooled-connection reuse across two orgs).
@@ -35,12 +36,13 @@ what this epic establishes.
 ### Excluded
 
 - Authentication and session management (Auth & Sessions epic).
-- Flag definitions, rules, evaluation (Flag Configuration + SDK epics).
+- Flag definitions, rules, evaluation (Flag Authoring / Ruleset Delivery + SDK epics).
 - Fine-grained/custom permissions and approval workflows (later phase).
 - Billing / plans / quotas.
 
 ## Dependencies
 
+- **Platform Foundation** — monorepo, shared-types, base API + web shell.
 - **Auth & Sessions** — requires an authenticated user for all actions; the invite-accept
   flow relies on account creation/linking there.
 - Infrastructure: PostgreSQL with RLS.
