@@ -1,5 +1,5 @@
 ---
-title: ADR — Persistence Tooling: Kysely
+title: "ADR — Persistence Tooling: Kysely"
 status: accepted
 owner: hapham
 date: 2026-07-28

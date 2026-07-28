@@ -1,5 +1,5 @@
 ---
-title: ADR — Real-Time Transport: SSE + Redis Pub/Sub
+title: "ADR — Real-Time Transport: SSE + Redis Pub/Sub"
 status: accepted
 owner: hapham
 date: 2026-07-28
