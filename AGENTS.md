@@ -18,8 +18,18 @@ togglr ships three surfaces:
 - **Auth:** browser → API via httpOnly, Redis-backed session cookies with SameSite + CSRF protection; SDKs → API via per-environment secret keys. Never put session tokens in browser-accessible storage.
 - **Tooling:** Biome for linting and formatting (no ESLint/Prettier — Biome is the single source of truth).
 - **Package manager:** pnpm (workspaces).
-- **Repo layout:** monorepo — `apps/api` (NestJS), `apps/web` (React SPA), `packages/sdk` (client SDK), `packages/shared-types` (DTOs/ruleset types shared across all three).
+- **Repo layout:** monorepo — `apps/api` (NestJS), `apps/web` (React SPA), `packages/sdk` (client SDK), `packages/eval-core` (pure, shared evaluation engine used by SDK + API), `packages/shared-types` (DTOs/ruleset/version types shared across all).
 
 When writing or reviewing code, follow existing NestJS module conventions, keep tenant isolation invariants intact (never bypass RLS / tenant scoping), and prefer local in-process evaluation paths for anything on the SDK hot path.
+
+## Asking me questions
+
+When you ask me a clarifying question or present options, **always**:
+
+- **Explain what the question is really about** in plain terms — assume I may not know the jargon or the underlying trade-off; define the concept first.
+- **Give a concrete example** (one or two) that illustrates each option in practice.
+- **List the pros and cons** of each option, then state your recommendation and why.
+
+Never present a bare option list without this context. A question I can't understand is a question I can't answer.
 
 @.omp/framework.md
