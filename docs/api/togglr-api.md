@@ -29,9 +29,13 @@ canonical definitions.
 
 - **Base URLs:** `/api/v1` (control plane), `/sdk/v1` (SDK hot path), `/healthz` (unauthed).
 - **Auth (control plane):** an `httpOnly; Secure; SameSite=Lax` session cookie
-  (`togglr_session`). All **mutating** requests (`POST`/`PATCH`/`PUT`/`DELETE`) must also
-  send the per-session CSRF token in an `X-CSRF-Token` header; the SPA reads the token from
-  `GET /auth/me` (or the login response). The session cookie is never exposed to JS.
+  (`togglr_session`). All **session-authenticated** mutating requests
+  (`POST`/`PATCH`/`PUT`/`DELETE`) must also send the per-session CSRF token in an
+  `X-CSRF-Token` header; the SPA reads the token from `GET /auth/me` (or the login/signup
+  response). The unauthenticated bootstrap POSTs — `/auth/signup`, `/auth/login`, and
+  `/auth/invites/:token/accept` when creating a new account — carry no session and are
+  CSRF-exempt (`SameSite=Lax` plus their credential-bearing nature is the control). The
+  session cookie is never exposed to JS.
 - **Auth (SDK):** `Authorization: Bearer <sdkKey>`. Keys are per-environment and resolve
   the tenant; no cookie/CSRF.
 - **Tenant scoping:** the org is identified by its **immutable slug** in the path
@@ -150,7 +154,7 @@ No email verification in MVP (deferred).
 ```json
 {
   "user": { "id": "6f1c…", "email": "ada@example.com", "name": "Ada" },
-  "memberships": [ { "orgSlug": "acme-inc", "orgName": "Acme Inc", "role": "owner" } ],
+  "memberships": [ { "slug": "acme-inc", "name": "Acme Inc", "role": "owner" } ],
   "csrfToken": "b3a9…"
 }
 ```
@@ -184,13 +188,13 @@ No email verification in MVP (deferred).
 | Field | Type | Description |
 | --- | --- | --- |
 | `user` | object | `{ id, email, name }`. |
-| `memberships` | array | `[{ orgSlug, orgName, role }]`. |
+| `memberships` | array | `[{ slug, name, role }]`. |
 | `csrfToken` | string | Per-session CSRF token for `X-CSRF-Token`. |
 
 ```json
 {
   "user": { "id": "6f1c…", "email": "ada@example.com", "name": "Ada" },
-  "memberships": [ { "orgSlug": "acme-inc", "orgName": "Acme Inc", "role": "owner" } ],
+  "memberships": [ { "slug": "acme-inc", "name": "Acme Inc", "role": "owner" } ],
   "csrfToken": "b3a9…"
 }
 ```
@@ -240,7 +244,7 @@ adding a membership to an existing account.
 
 ```json
 { "user": { "id": "9b2e…", "email": "grace@example.com" },
-  "membership": { "orgSlug": "acme-inc", "role": "admin" } }
+  "membership": { "slug": "acme-inc", "role": "admin" } }
 ```
 
 **Errors:**
@@ -688,7 +692,7 @@ Full path: `/orgs/:orgSlug/projects/:projectKey/flags/:flagKey/environments/:env
 **Description:** Read the current config for a flag in one environment.
 **Auth:** session + membership.
 
-**Response (200):**
+**Response (200):** the config fields, wrapped in a `config` object.
 
 | Field | Type | Description |
 | --- | --- | --- |
@@ -700,16 +704,18 @@ Full path: `/orgs/:orgSlug/projects/:projectKey/flags/:flagKey/environments/:env
 
 ```json
 {
-  "enabled": true,
-  "defaultVariation": false,
-  "rules": [
-    { "conditions": [ { "attribute": "plan", "operator": "equals", "values": ["enterprise"] } ],
-      "result": { "kind": "variation", "variation": true } },
-    { "conditions": [],
-      "result": { "kind": "rollout", "percentage": 10, "bucketBy": "key", "variation": true } }
-  ],
-  "configVersion": 5,
-  "updatedAt": "2026-07-28T09:30:00.000Z"
+  "config": {
+    "enabled": true,
+    "defaultVariation": false,
+    "rules": [
+      { "conditions": [ { "attribute": "plan", "operator": "equals", "values": ["enterprise"] } ],
+        "result": { "kind": "variation", "variation": true } },
+      { "conditions": [],
+        "result": { "kind": "rollout", "percentage": 10, "bucketBy": "key", "variation": true } }
+    ],
+    "configVersion": 5,
+    "updatedAt": "2026-07-28T09:30:00.000Z"
+  }
 }
 ```
 
@@ -736,11 +742,11 @@ record. A plain toggle is just `{ enabled, expectedConfigVersion }`.
   "rules": [ { "conditions": [], "result": { "kind": "rollout", "percentage": 25, "bucketBy": "key", "variation": true } } ] }
 ```
 
-**Response (200):**
+**Response (200):** the updated config wrapped in a `config` object (new `configVersion`, bumped `rulesetVersion`).
 
 ```json
-{ "enabled": true, "defaultVariation": false, "rules": [ /* … */ ],
-  "configVersion": 6, "rulesetVersion": 43, "updatedAt": "2026-07-28T10:05:00.000Z" }
+{ "config": { "enabled": true, "defaultVariation": false, "rules": [ /* … */ ],
+  "configVersion": 6, "rulesetVersion": 43, "updatedAt": "2026-07-28T10:05:00.000Z" } }
 ```
 
 **Errors:**
@@ -772,7 +778,7 @@ Returns the exact `EvaluationResult` the SDK would compute (parity).
       "result": { "kind": "variation", "variation": true } } ] } }
 ```
 
-**Response (200):**
+**Response (200):** the `EvaluationResult` at top level — an operation result, not a resource, so intentionally unwrapped.
 
 ```json
 { "value": true, "reason": "RULE_MATCH" }
@@ -780,6 +786,8 @@ Returns the exact `EvaluationResult` the SDK would compute (parity).
 
 `reason` ∈ `RULE_MATCH | ROLLOUT | DEFAULT | FLAG_OFF | FLAG_NOT_FOUND | MISSING_KEY`
 (the resolvable subset; `SDK_NOT_READY`/`TYPE_MISMATCH` are SDK-runtime-only).
+
+With `config` omitted, preview evaluates the saved config; an archived flag then yields `FLAG_NOT_FOUND`.
 
 **Errors:** `400 INVALID_RULE` — draft `config` fails validation.
 
