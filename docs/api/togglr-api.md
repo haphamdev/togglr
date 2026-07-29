@@ -51,8 +51,9 @@ canonical definitions.
 - **Timestamps:** ISO-8601 UTC strings (e.g. `2026-07-28T10:15:30.000Z`).
 - **Error format:** every non-2xx returns
   `{ "error": { "code": "ERROR_CODE", "message": "Human-readable message" } }`.
+  Codes are animal-themed and opaque; see the [Error Codes registry](error-codes.md) for the authoritative meaning of every code.
 - **Optimistic concurrency:** flag-config edits carry `expectedConfigVersion`; a stale value
-  ⇒ **409** `CONFIG_VERSION_CONFLICT` and the client refetches.
+  ⇒ **409** `JEALOUS_CAT` and the client refetches.
 - **Pagination:** none in Phase 1 — all list resources are bounded. The flags list is the
   only likely-to-grow collection; cursor pagination is its documented forward path (Open
   Questions), not built now.
@@ -65,13 +66,13 @@ These may be returned by the endpoints indicated and are omitted from per-endpoi
 
 | Code | `error.code` | When |
 | --- | --- | --- |
-| 401 | `UNAUTHENTICATED` | Missing/invalid/expired session (any authed control-plane route). |
-| 403 | `CSRF_INVALID` | Missing/mismatched `X-CSRF-Token` on a mutation. |
-| 403 | `NOT_MEMBER` | Authenticated, but not a member of the target org. |
-| 403 | `FORBIDDEN` | Member of the org, but role too low for the action. |
-| 400 | `VALIDATION_ERROR` | Malformed body / failed field validation (details in `message`). |
-| 404 | `NOT_FOUND` | Path resource does not exist within the caller's tenant. |
-| 503 | `SERVICE_UNAVAILABLE` | Redis (sessions) or Postgres unavailable — see design failure modes. |
+| 401 | `SLEEPY_OWL` | Missing/invalid/expired session (any authed control-plane route). |
+| 403 | `GRUMPY_OWL` | Missing/mismatched `X-CSRF-Token` on a mutation. |
+| 403 | `LONELY_OWL` | Authenticated, but not a member of the target org. |
+| 403 | `SNEAKY_OWL` | Member of the org, but role too low for the action. |
+| 400 | `CLUMSY_OWL` | Malformed body / failed field validation (details in `message`). |
+| 404 | `LOST_OWL` | Path resource does not exist within the caller's tenant. |
+| 503 | `DIZZY_OWL` | Redis (sessions) or Postgres unavailable — see design failure modes. |
 
 **Role model:** `member` < `admin` < `owner`. `member` = read + preview; `admin` = author
 flags, manage environments/keys, manage invites; `owner` = manage org + members. Enforced by
@@ -98,7 +99,7 @@ flags, manage environments/keys, manage invites; `owner` = manage org + members.
 { "status": "ok", "checks": { "postgres": true, "redis": true } }
 ```
 
-**Errors:** `503 SERVICE_UNAVAILABLE` if any dependency check fails (body carries the same
+**Errors:** `503 DIZZY_OWL` if any dependency check fails (body carries the same
 shape with `status: "degraded"`).
 
 ---
@@ -135,7 +136,7 @@ No email verification in MVP (deferred).
 
 | Code | `error.code` | When |
 | --- | --- | --- |
-| 409 | `EMAIL_TAKEN` | An account with this email already exists. |
+| 409 | `GREEDY_FOX` | An account with this email already exists. |
 
 ### POST /auth/login
 
@@ -163,7 +164,7 @@ No email verification in MVP (deferred).
 
 | Code | `error.code` | When |
 | --- | --- | --- |
-| 401 | `INVALID_CREDENTIALS` | Email/password mismatch (generic, no user enumeration). |
+| 401 | `SLY_FOX` | Email/password mismatch (generic, no user enumeration). |
 
 ### POST /auth/logout
 
@@ -219,9 +220,9 @@ capability). Lets the accept screen show which org/role and whether an account i
 
 | Code | `error.code` | When |
 | --- | --- | --- |
-| 404 | `INVITE_NOT_FOUND` | No pending invite for this token. |
-| 410 | `INVITE_EXPIRED` | Invite past `expiresAt`. |
-| 409 | `INVITE_ALREADY_ACCEPTED` | Invite already consumed. |
+| 404 | `LOST_BEE` | No pending invite for this token. |
+| 410 | `TIRED_BEE` | Invite past `expiresAt`. |
+| 409 | `HAPPY_BEE` | Invite already consumed. |
 
 ### POST /auth/invites/:token/accept
 
@@ -251,11 +252,11 @@ adding a membership to an existing account.
 
 | Code | `error.code` | When |
 | --- | --- | --- |
-| 404 | `INVITE_NOT_FOUND` | Unknown/void token. |
-| 410 | `INVITE_EXPIRED` | Past expiry. |
-| 409 | `INVITE_ALREADY_ACCEPTED` | Already consumed. |
-| 400 | `PASSWORD_REQUIRED` | Case (a) with no `password`. |
-| 403 | `EMAIL_MISMATCH` | Case (b) session user's email ≠ invited email. |
+| 404 | `LOST_BEE` | Unknown/void token. |
+| 410 | `TIRED_BEE` | Past expiry. |
+| 409 | `HAPPY_BEE` | Already consumed. |
+| 400 | `SHY_FOX` | Case (a) with no `password`. |
+| 403 | `PUZZLED_FOX` | Case (b) session user's email ≠ invited email. |
 
 ---
 
@@ -288,7 +289,7 @@ the RLS context inside the same transaction so the initial inserts pass `WITH CH
 
 | Code | `error.code` | When |
 | --- | --- | --- |
-| 409 | `SLUG_TAKEN` | Slug already in use. |
+| 409 | `FUNNY_PIG` | Slug already in use. |
 
 ### GET /orgs
 
@@ -357,8 +358,8 @@ the RLS context inside the same transaction so the initial inserts pass `WITH CH
 
 | Code | `error.code` | When |
 | --- | --- | --- |
-| 404 | `NOT_FOUND` | No such member in this org. |
-| 409 | `LAST_OWNER` | Would demote the only remaining owner. |
+| 404 | `LOST_OWL` | No such member in this org. |
+| 409 | `LONELY_RAM` | Would demote the only remaining owner. |
 
 ### DELETE /orgs/:orgSlug/members/:userId
 
@@ -370,8 +371,8 @@ the RLS context inside the same transaction so the initial inserts pass `WITH CH
 
 | Code | `error.code` | When |
 | --- | --- | --- |
-| 404 | `NOT_FOUND` | No such member. |
-| 409 | `LAST_OWNER` | Would remove the only remaining owner. |
+| 404 | `LOST_OWL` | No such member. |
+| 409 | `LONELY_RAM` | Would remove the only remaining owner. |
 
 ---
 
@@ -401,8 +402,8 @@ link (Mailhog in dev).
 
 | Code | `error.code` | When |
 | --- | --- | --- |
-| 409 | `ALREADY_MEMBER` | Email already belongs to the org. |
-| 409 | `INVITE_PENDING` | A pending invite for this email already exists (use resend). |
+| 409 | `COZY_BEE` | Email already belongs to the org. |
+| 409 | `BUSY_BEE` | A pending invite for this email already exists (use resend). |
 
 ### GET /orgs/:orgSlug/invites
 
@@ -421,8 +422,8 @@ link (Mailhog in dev).
 
 | Code | `error.code` | When |
 | --- | --- | --- |
-| 404 | `NOT_FOUND` | No such invite. |
-| 409 | `INVITE_ALREADY_ACCEPTED` | Cannot resend a consumed invite. |
+| 404 | `LOST_OWL` | No such invite. |
+| 409 | `HAPPY_BEE` | Cannot resend a consumed invite. |
 
 ### DELETE /orgs/:orgSlug/invites/:inviteId
 
@@ -466,7 +467,7 @@ link (Mailhog in dev).
 
 | Code | `error.code` | When |
 | --- | --- | --- |
-| 409 | `PROJECT_KEY_TAKEN` | Key already used in this org. |
+| 409 | `SLEEPY_DOG` | Key already used in this org. |
 
 ### GET /orgs/:orgSlug/projects
 
@@ -510,7 +511,7 @@ link (Mailhog in dev).
 
 | Code | `error.code` | When |
 | --- | --- | --- |
-| 409 | `ENV_KEY_TAKEN` | Key already used in this project. |
+| 409 | `NOISY_DUCK` | Key already used in this project. |
 
 ### GET /orgs/:orgSlug/projects/:projectKey/environments
 
@@ -591,7 +592,7 @@ key expires. Returns the new secret (shown once).
   "rotatedKey": { "id": "a1b2…", "status": "active", "expiresAt": "2026-07-29T10:00:00.000Z" } }
 ```
 
-**Errors:** `404 NOT_FOUND` — no such key in this environment.
+**Errors:** `404 LOST_OWL` — no such key in this environment.
 
 ### DELETE …/keys/:keyId
 
@@ -634,8 +635,8 @@ environment of the project.
 
 | Code | `error.code` | When |
 | --- | --- | --- |
-| 400 | `INVALID_FLAG_KEY` | Key fails `^[a-z0-9-]+$`. |
-| 409 | `FLAG_KEY_TAKEN` | Key already used in this project. |
+| 400 | `GRUMPY_CAT` | Key fails `^[a-z0-9-]+$`. |
+| 409 | `FAT_CAT` | Key already used in this project. |
 
 ### GET /orgs/:orgSlug/projects/:projectKey/flags
 
@@ -753,8 +754,8 @@ record. A plain toggle is just `{ enabled, expectedConfigVersion }`.
 
 | Code | `error.code` | When |
 | --- | --- | --- |
-| 400 | `INVALID_RULE` | Malformed rule/condition/result (bad operator, percentage out of `0..100`, empty `values`, unknown `kind`). |
-| 409 | `CONFIG_VERSION_CONFLICT` | `expectedConfigVersion` ≠ stored version (concurrent edit / rollback). Client refetches. |
+| 400 | `CURIOUS_CAT` | Malformed rule/condition/result (bad operator, percentage out of `0..100`, empty `values`, unknown `kind`). |
+| 409 | `JEALOUS_CAT` | `expectedConfigVersion` ≠ stored version (concurrent edit / rollback). Client refetches. |
 
 ### POST …/flags/:flagKey/environments/:envKey/preview
 
@@ -789,7 +790,7 @@ Returns the exact `EvaluationResult` the SDK would compute (parity).
 
 With `config` omitted, preview evaluates the saved config; an archived flag then yields `FLAG_NOT_FOUND`.
 
-**Errors:** `400 INVALID_RULE` — draft `config` fails validation.
+**Errors:** `400 CURIOUS_CAT` — draft `config` fails validation.
 
 ---
 
@@ -829,7 +830,7 @@ sends `If-None-Match` with its cached version; unchanged ⇒ `304` (bodyless), c
 
 | Code | `error.code` | When |
 | --- | --- | --- |
-| 401 | `INVALID_SDK_KEY` | Missing/unknown/revoked/expired key (generic; no distinction, to avoid probing). |
+| 401 | `BLIND_BAT` | Missing/unknown/revoked/expired key (generic; no distinction, to avoid probing). |
 
 ---
 
