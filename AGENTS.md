@@ -8,6 +8,18 @@ togglr ships three surfaces:
 - **Web app** — a React single-page admin dashboard (Vite + React Router + TanStack Query) where Flag Administrators sign up, manage orgs/projects/environments, configure flags and rules, and view audit history. Talks to the Platform API; authenticated via httpOnly, Redis-backed session cookies. Dogfoods the real-time stream (subscribes to SSE to reflect flag changes live).
 - **Client SDK** — a first-party server-side TypeScript library that consumer services install to evaluate flags **locally** (streaming the ruleset in-process for sub-5ms evaluation) and stay fresh via a live SSE connection.
 
+## Plan Execution (Working Agreement)
+
+When executing an approved plan, work **one step at a time** and **pause for review between steps** — never implement a multi-step plan in a single pass. The loop is:
+
+1. **Plan** — agree on the steps.
+2. **Implement one step** — make only that step's changes.
+3. **Pause for review** — stop and let me review the change before continuing.
+4. **Test** — verify that step (run the relevant test/command/smoke).
+5. **Continue** — proceed to the next step only after I've reviewed and the step is verified.
+
+Do not batch steps, skip the pause, or run ahead. If a step reveals the next one is trivial or tightly coupled, still stop and say so rather than continuing unprompted.
+
 ## Tech Stack & Conventions
 
 - **Language:** TypeScript (strict) across API, web app, and SDK.
