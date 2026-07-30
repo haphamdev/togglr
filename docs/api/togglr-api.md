@@ -1,6 +1,6 @@
 ---
 title: "togglr — API Contract (Phase 1)"
-status: draft
+status: approved
 owner: hapham
 date: 2026-07-28
 parent: docs/design/architecture-overview.md
