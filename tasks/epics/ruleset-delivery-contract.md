@@ -67,7 +67,9 @@ the same language; getting it wrong forces re-cuts across every other epic.
 
 ## Stories
 
-To be broken down using the `write-story` skill.
+- [Ruleset shape & version model (shared-types)](../stories/ruleset-shape-version-model.md) — M
+- [Ruleset-fetch endpoint (SDK hot path)](../stories/ruleset-fetch-endpoint.md) — M
+- [Cache-ready ruleset representation](../stories/ruleset-cache-ready-representation.md) — S
 
 ## Open Questions
 

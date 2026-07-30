@@ -55,7 +55,14 @@ every later epic.
 
 ## Stories
 
-To be broken down using the `write-story` skill.
+- [Scaffold the pnpm monorepo & workspaces](../stories/foundation-scaffold-monorepo.md) — M
+- [Biome as the single lint/format source of truth](../stories/foundation-biome-tooling.md) — S
+- [Shared packages skeletons (shared-types + eval-core)](../stories/foundation-shared-packages-skeletons.md) — S
+- [Base NestJS API: bootstrap, config, DB/Redis wiring, health](../stories/foundation-api-bootstrap-health.md) — M
+- [DB migration tooling & role baseline](../stories/foundation-migration-tooling-roles.md) — M
+- [Web app shell (React SPA)](../stories/foundation-web-shell.md) — M
+- [Local dev environment (docker-compose)](../stories/foundation-local-dev-compose.md) — S
+- [CI pipeline](../stories/foundation-ci-pipeline.md) — S
 
 ## Open Questions
 

@@ -72,7 +72,11 @@ consumers by the Ruleset Delivery & Contract epic.
 
 ## Stories
 
-To be broken down using the `write-story` skill.
+- [eval-core evaluation engine (shared)](../stories/flag-eval-core-engine.md) — L
+- [Create & manage flags](../stories/flag-crud.md) — M
+- [Edit per-environment flag config (toggle, default, rules, rollout)](../stories/flag-config-edit.md) — L
+- [Server-side flag preview / debugger](../stories/flag-preview.md) — M
+- [Web flag editor UI](../stories/flag-editor-ui.md) — L
 
 ## Open Questions
 

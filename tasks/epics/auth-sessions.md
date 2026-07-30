@@ -56,7 +56,11 @@ on mutations. Nothing in the dashboard is safe to build until this holds.
 
 ## Stories
 
-To be broken down using the `write-story` skill.
+- [Sign up for a togglr account](../stories/auth-signup.md) — M
+- [Log in and log out](../stories/auth-login-logout.md) — M
+- [Session bootstrap & CSRF protection](../stories/auth-session-bootstrap-csrf.md) — M
+- [Instant session revocation & idle timeout](../stories/auth-revocation-idle-timeout.md) — M
+- [Invite-accept account creation/linking](../stories/auth-invite-accept-hook.md) — M
 
 ## Open Questions
 

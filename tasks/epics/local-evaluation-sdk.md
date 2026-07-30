@@ -66,7 +66,12 @@ real.
 
 ## Stories
 
-To be broken down using the `write-story` skill.
+- [SDK bootstrap & in-memory ruleset cache](../stories/sdk-bootstrap-cache.md) — M
+- [evaluate() API over eval-core](../stories/sdk-evaluate-api.md) — M
+- [Polling refresh with version check](../stories/sdk-polling-refresh.md) — M
+- [Resilience: last-known ruleset + backoff](../stories/sdk-resilience-backoff.md) — M
+- [Telemetry emission seam (no-op)](../stories/sdk-telemetry-seam.md) — S
+- [Benchmark & load test: p99 evaluate < 5ms](../stories/sdk-benchmark-load-test.md) — M
 
 ## Open Questions
 
