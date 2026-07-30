@@ -2,7 +2,7 @@
 
 **togglr** is a low-latency, multi-tenant feature flag platform. Organizations create feature flags, target them with complex rules (user attributes, percentage rollouts, custom segments), and toggle them in real time across their applications — with **sub-5ms in-process evaluation**, instant propagation of changes, tenant-isolated data, telemetry, and full audit history with one-click rollback.
 
-> **Status:** design & specification phase. The architecture, data model, and API contract are settled and documented under [`docs/`](docs/); implementation is tracked as epics under [`tasks/epics/`](tasks/epics/). No application code has shipped yet — this repository currently holds the specs, design docs, and ADRs that define what gets built.
+> **Status:** Phase 1 foundation is in place — a pnpm-workspaces monorepo with the five packages, a booting NestJS API (typed config, Kysely/Postgres + Redis wiring, RLS boot-safety, `/healthz`), migration tooling with the role/RLS baseline, a React SPA shell, local docker-compose, and CI. See [**Local development**](#local-development) to boot it. Architecture, data model, and API contract are documented under [`docs/`](docs/); remaining work is tracked as epics under [`tasks/epics/`](tasks/epics/).
 
 ## Why togglr
 
@@ -64,9 +64,43 @@ if (on) renderNewCheckout();
 
 `evaluate()` never throws and returns your supplied default for any non-resolvable case (not yet bootstrapped, unknown flag, missing bucketing key). See [Ruleset & Evaluation Engine + SDK](docs/design/ruleset-evaluation-sdk.md).
 
-## Planned repository layout
+## Local development
 
-togglr will be a **pnpm-workspaces monorepo** (per [`AGENTS.md`](AGENTS.md)):
+**Prerequisites:** Node ≥ 22, pnpm ≥ 10 (via Corepack), and Docker (Compose v2).
+
+```bash
+cp .env.example .env      # dev-only credentials + connection strings
+pnpm install              # install the workspace
+pnpm dev                  # docker compose up --wait → migrate → API + web (parallel)
+```
+
+`pnpm dev` starts Postgres, Redis, and Mailhog, waits for them to report healthy,
+applies migrations (roles + RLS + `audit_logs` baseline), then runs the NestJS API
+(`tsx watch`) and the Vite SPA together. The API refuses to boot unless its DB role is
+non-superuser / non-`BYPASSRLS` and RLS is active — proving the migration ran.
+
+- **API:** `http://localhost:$PORT` (default `3000`) — health at `GET /healthz`
+  (`{"status":"ok","checks":{"postgres":true,"redis":true}}`, `503` when degraded).
+- **Web:** Vite dev server (proxies `/api` → the API).
+- **Mailhog UI:** `http://localhost:8025` (dev invite-email sink).
+
+> If ports `5432`/`6379`/`3000`/`8025` are taken, override them in `.env`
+> (`POSTGRES_PORT`, `REDIS_PORT`, `PORT`, `MAILHOG_UI_PORT`, …) and adjust the DSNs.
+
+**Common commands:**
+
+```bash
+pnpm typecheck     # tsc --noEmit across every package
+pnpm check         # Biome lint + format (single root config)
+pnpm test          # unit tests (serviceless)
+pnpm test:int      # integration tests (needs compose Postgres/Redis + pnpm migrate)
+pnpm migrate       # apply DB migrations (privileged migration role)
+pnpm dev:reset     # docker compose down -v — wipe Postgres/Redis state
+```
+
+## Repository layout
+
+togglr is a **pnpm-workspaces monorepo** (per [`AGENTS.md`](AGENTS.md)):
 
 ```
 apps/

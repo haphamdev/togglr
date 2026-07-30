@@ -1,7 +1,8 @@
-# Nestjs specific
-/dist
-/node_modules
-/build
+# Build output & deps (all workspace levels)
+node_modules/
+dist/
+build/
+coverage/
 /tmp
 
 # Logs

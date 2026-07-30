@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+jobs:
+  # Serviceless gate: install → typecheck → lint/format → unit + tooling tests.
+  # Each gate is a separate run step (no continue-on-error, no &&-chaining) so a
+  # passing lint with a failing test still fails the job.
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm -r exec tsc --noEmit
+
+      - name: Lint + format (Biome)
+        run: pnpm biome check .
+
+      - name: Dependency graph guard
+        run: pnpm deps:check
+
+      - name: Tooling tests
+        run: pnpm test:tooling
+
+      - name: Unit tests
+        run: pnpm -r --if-present test
+
+  # Integration tier: real Postgres + Redis from the same docker-compose stack
+  # used locally. Unit tier above stays serviceless.
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      - name: Seed dev env (standard compose ports)
+        run: cp .env.example .env
+
+      - name: Start Postgres + Redis
+        run: docker compose up -d --wait postgres redis
+
+      - name: Apply migrations
+        run: pnpm migrate
+
+      - name: Integration tests
+        run: pnpm -r --if-present test:int
+
+      - name: Tear down services
+        if: always()
+        run: docker compose down -v
