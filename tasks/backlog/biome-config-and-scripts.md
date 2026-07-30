@@ -1,6 +1,6 @@
 ---
 title: Add root biome.json and format/lint scripts
-status: draft
+status: done
 owner: hapham
 date: 2026-07-30
 parent: tasks/stories/foundation-biome-tooling.md

@@ -1,6 +1,6 @@
 ---
 title: CI workflow — install, typecheck, lint, test on every PR
-status: draft
+status: done
 owner: hapham
 date: 2026-07-30
 parent: tasks/stories/foundation-ci-pipeline.md

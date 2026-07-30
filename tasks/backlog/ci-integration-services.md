@@ -1,6 +1,6 @@
 ---
 title: Provide Postgres + Redis to integration tests in CI
-status: draft
+status: done
 owner: hapham
 date: 2026-07-30
 parent: tasks/stories/foundation-ci-pipeline.md

@@ -1,6 +1,6 @@
 ---
 title: Baseline migration — extensions, roles, audit immutability
-status: draft
+status: done
 owner: hapham
 date: 2026-07-30
 parent: tasks/stories/foundation-migration-tooling-roles.md

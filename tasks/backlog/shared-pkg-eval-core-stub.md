@@ -1,6 +1,6 @@
 ---
 title: Export pure eval-core evaluate() stub (canonical 4-arg)
-status: draft
+status: done
 owner: hapham
 date: 2026-07-30
 parent: tasks/stories/foundation-shared-packages-skeletons.md

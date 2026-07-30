@@ -1,6 +1,6 @@
 ---
 title: Unauthenticated GET /healthz with per-dependency checks
-status: draft
+status: done
 owner: hapham
 date: 2026-07-30
 parent: tasks/stories/foundation-api-bootstrap-health.md

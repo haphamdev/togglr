@@ -1,6 +1,6 @@
 ---
 title: One-command boot of API and web against compose deps
-status: draft
+status: done
 owner: hapham
 date: 2026-07-30
 parent: tasks/stories/foundation-local-dev-compose.md

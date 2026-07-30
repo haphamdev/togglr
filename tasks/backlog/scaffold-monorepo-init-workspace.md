@@ -1,6 +1,6 @@
 ---
 title: Initialize pnpm workspace, pinned toolchain, and strict TS base
-status: draft
+status: done
 owner: hapham
 date: 2026-07-30
 parent: tasks/stories/foundation-scaffold-monorepo.md

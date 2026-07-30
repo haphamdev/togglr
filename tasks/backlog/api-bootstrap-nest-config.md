@@ -1,6 +1,6 @@
 ---
 title: NestJS bootstrap + typed config module with fail-fast env validation
-status: draft
+status: done
 owner: hapham
 date: 2026-07-30
 parent: tasks/stories/foundation-api-bootstrap-health.md

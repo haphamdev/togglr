@@ -1,6 +1,6 @@
 ---
 title: Biome as the single lint/format source of truth
-status: approved
+status: done
 owner: hapham
 date: 2026-07-30
 parent: tasks/epics/platform-foundation.md

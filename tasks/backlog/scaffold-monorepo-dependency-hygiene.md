@@ -1,6 +1,6 @@
 ---
 title: Enforce acyclic dependency graph and deterministic install
-status: draft
+status: done
 owner: hapham
 date: 2026-07-30
 parent: tasks/stories/foundation-scaffold-monorepo.md

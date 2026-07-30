@@ -1,6 +1,6 @@
 ---
 title: Scaffold React SPA shell with routing and styling
-status: draft
+status: done
 owner: hapham
 date: 2026-07-30
 parent: tasks/stories/foundation-web-shell.md
