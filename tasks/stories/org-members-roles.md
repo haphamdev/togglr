@@ -1,6 +1,6 @@
 ---
 title: Manage team members & roles
-status: approved
+status: done
 owner: hapham
 date: 2026-07-30
 parent: tasks/epics/org-workspace-isolation.md
