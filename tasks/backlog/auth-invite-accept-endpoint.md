@@ -1,6 +1,6 @@
 ---
 title: POST /auth/invites/:token/accept (auth side)
-status: draft
+status: done
 owner: hapham
 date: 2026-07-30
 parent: tasks/stories/auth-invite-accept-hook.md
@@ -8,12 +8,6 @@ sequence: 1
 ---
 
 # POST /auth/invites/:token/accept (auth side)
-
-> **⛔ BLOCKED — not planned yet.** Depends on the **Org Workspace & Isolation** epic
-> (`tasks/epics/org-workspace-isolation.md`): the `invites` table + token validation and the
-> `memberships` table must exist before this endpoint can create/link a user against an
-> invite. Parent story: `tasks/stories/auth-invite-accept-hook.md`. Pull into a plan only
-> once those Org Workspace tables land.
 
 ## What
 

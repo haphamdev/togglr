@@ -1,3 +1,5 @@
+export * from "./control-plane";
+
 // Canonical wire-contract types shared across api / web / sdk / eval-core.
 // Types only — no runtime code (no class/enum/const), so importing this module
 // executes nothing. Shapes mirror docs/design/ruleset-evaluation-sdk.md:50-95.

@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { APP_GUARD } from "@nestjs/core";
+import { OrgModule } from "../org/org.module";
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
 import { CsrfGuard } from "./guards/csrf.guard";
@@ -14,6 +15,7 @@ import { SessionService } from "./session.service";
  * `request.session` is set before CsrfGuard reads it.
  */
 @Module({
+  imports: [OrgModule],
   controllers: [AuthController],
   providers: [
     AuthService,

@@ -104,6 +104,7 @@ describe("Logout control (RootLayout)", () => {
           ? Promise.reject(new ApiError("SLEEPY_OWL", "no session", 401))
           : Promise.resolve(authMeOk);
       }
+      if (path === "/orgs") return Promise.resolve({ orgs: [] });
       return Promise.resolve(undefined);
     });
 

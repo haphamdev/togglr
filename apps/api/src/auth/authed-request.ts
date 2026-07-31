@@ -1,14 +1,19 @@
+import type { OrgRole } from "@togglr/shared-types";
 import type { Request } from "express";
 import type { SessionRecord } from "./session.service";
 
 /**
  * Express request after SessionGuard has resolved a session. `session`/
  * `sessionToken` are set only on authenticated (non-public) routes; protected
- * handlers read them, public routes leave them undefined.
+ * handlers read them, public routes leave them undefined. `orgContext` is set by
+ * OrgContextGuard (or SdkKeyGuard) on org-scoped routes; `sdkEnvironmentId` by
+ * SdkKeyGuard on the SDK hot path.
  */
 export interface AuthedRequest extends Request {
   session?: SessionRecord;
   sessionToken?: string;
+  orgContext?: { orgId: string; role: OrgRole };
+  sdkEnvironmentId?: string;
 }
 
 /** Parse a single cookie value out of a raw `Cookie` header (dependency-free). */

@@ -15,8 +15,73 @@ export interface UsersTable {
   created_at: Generated<Date>;
 }
 
+/** Tenant root. RLS policy keys on `id` (not organization_id). */
+export interface OrganizationsTable {
+  id: Generated<string>;
+  name: string;
+  slug: string;
+  created_at: Generated<Date>;
+}
+
+export interface MembershipsTable {
+  id: Generated<string>;
+  organization_id: string;
+  user_id: string;
+  role: string;
+  created_at: Generated<Date>;
+}
+
+export interface InvitesTable {
+  id: Generated<string>;
+  organization_id: string;
+  email: string;
+  role: string;
+  token_hash: string;
+  status: Generated<string>;
+  expires_at: Date;
+  invited_by: string | null;
+  created_at: Generated<Date>;
+}
+
+export interface ProjectsTable {
+  id: Generated<string>;
+  organization_id: string;
+  key: string;
+  name: string;
+  created_at: Generated<Date>;
+}
+
+export interface EnvironmentsTable {
+  id: Generated<string>;
+  organization_id: string;
+  project_id: string;
+  key: string;
+  name: string;
+  ruleset_version: Generated<number>;
+  created_at: Generated<Date>;
+}
+
+export interface SdkKeysTable {
+  id: Generated<string>;
+  organization_id: string;
+  environment_id: string;
+  prefix: string;
+  key_hash: string;
+  name: string | null;
+  status: Generated<string>;
+  expires_at: Date | null;
+  last_used_at: Date | null;
+  created_at: Generated<Date>;
+}
+
 export interface Database {
   users: UsersTable;
+  organizations: OrganizationsTable;
+  memberships: MembershipsTable;
+  invites: InvitesTable;
+  projects: ProjectsTable;
+  environments: EnvironmentsTable;
+  sdk_keys: SdkKeysTable;
 }
 
 /** DI token for the injectable Kysely<Database> instance. */

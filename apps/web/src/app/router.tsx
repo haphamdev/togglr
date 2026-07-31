@@ -1,8 +1,13 @@
 import type { RouteObject } from "react-router-dom";
 import { RequireAuth } from "../auth/require-auth";
-import { DashboardRoute } from "../routes/dashboard";
+import { EnvironmentKeysRoute } from "../routes/environment-keys";
+import { InviteAcceptRoute } from "../routes/invite-accept";
 import { LoginRoute } from "../routes/login";
-import { SettingsRoute } from "../routes/settings";
+import { OrgMembersRoute } from "../routes/org-members";
+import { OrgProjectsRoute } from "../routes/org-projects";
+import { OrgSettingsRoute } from "../routes/org-settings";
+import { OrgsIndexRoute } from "../routes/orgs-index";
+import { ProjectEnvironmentsRoute } from "../routes/project-environments";
 import { SignupRoute } from "../routes/signup";
 import { RootLayout } from "./layout";
 
@@ -10,6 +15,7 @@ import { RootLayout } from "./layout";
 export const appRoutes: RouteObject[] = [
   { path: "/login", element: <LoginRoute /> },
   { path: "/signup", element: <SignupRoute /> },
+  { path: "/invite/:token", element: <InviteAcceptRoute /> },
   {
     path: "/",
     element: (
@@ -18,8 +24,15 @@ export const appRoutes: RouteObject[] = [
       </RequireAuth>
     ),
     children: [
-      { index: true, element: <DashboardRoute /> },
-      { path: "settings", element: <SettingsRoute /> },
+      { index: true, element: <OrgsIndexRoute /> },
+      { path: "orgs/:orgSlug", element: <OrgProjectsRoute /> },
+      { path: "orgs/:orgSlug/members", element: <OrgMembersRoute /> },
+      { path: "orgs/:orgSlug/settings", element: <OrgSettingsRoute /> },
+      { path: "orgs/:orgSlug/projects/:projectKey", element: <ProjectEnvironmentsRoute /> },
+      {
+        path: "orgs/:orgSlug/projects/:projectKey/environments/:envKey",
+        element: <EnvironmentKeysRoute />,
+      },
     ],
   },
 ];

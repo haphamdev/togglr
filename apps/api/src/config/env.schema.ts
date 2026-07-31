@@ -23,6 +23,15 @@ export const envSchema = z.object({
     .enum(["true", "false"])
     .default("true")
     .transform((v) => v === "true"),
+  // SDK-key rotation grace window: how long a rotated key stays valid alongside
+  // its replacement (24 h default; org-sdk-keys, cp:154).
+  SDK_KEY_ROTATION_GRACE_S: z.coerce.number().int().positive().default(86400),
+  // Outbound mail (invite links). Mailhog is the dev SMTP sink (docker-compose).
+  SMTP_HOST: z.string().default("localhost"),
+  SMTP_PORT: z.coerce.number().int().positive().default(1025),
+  MAIL_FROM: z.string().default("togglr <no-reply@togglr.local>"),
+  // Base URL of the web app, used to build invite links (`/invite/:token`).
+  WEB_BASE_URL: z.string().default("http://localhost:5173"),
 });
 // Migration-only secrets are deliberately excluded from the API's boot surface:
 // the API runs least-privilege as togglr_app and never holds the superuser DSN.
