@@ -63,8 +63,8 @@ jobs:
       - name: Seed dev env (standard compose ports)
         run: cp .env.example .env
 
-      - name: Start Postgres + Redis
-        run: docker compose up -d --wait postgres redis
+      - name: Start Postgres, Redis + Mailhog
+        run: docker compose up -d --wait postgres redis mailhog
 
       - name: Apply migrations
         run: pnpm migrate
