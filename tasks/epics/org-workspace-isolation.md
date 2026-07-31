@@ -1,6 +1,6 @@
 ---
 title: Org Workspace & Isolation
-status: done
+status: in-progress
 owner: hapham
 date: 2026-07-28
 parent: docs/specs/togglr-platform.md
@@ -67,6 +67,8 @@ what this epic establishes.
 - [Create & manage projects](../stories/org-projects.md) — M
 - [Create & manage environments](../stories/org-environments.md) — M
 - [Issue, rotate & revoke SDK keys](../stories/org-sdk-keys.md) — L
+- [Rename projects & environments in the dashboard](../stories/org-rename-projects-environments-ui.md) — S
+- [Gate member management controls by role in the dashboard](../stories/org-members-control-gating-ui.md) — S
 
 ## Resolved Decisions
 
