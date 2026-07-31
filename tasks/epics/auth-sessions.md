@@ -1,6 +1,6 @@
 ---
 title: Auth & Sessions
-status: draft
+status: done
 owner: hapham
 date: 2026-07-28
 parent: docs/specs/togglr-platform.md
@@ -56,11 +56,15 @@ on mutations. Nothing in the dashboard is safe to build until this holds.
 
 ## Stories
 
-- [Sign up for a togglr account](../stories/auth-signup.md) — M
-- [Log in and log out](../stories/auth-login-logout.md) — M
-- [Session bootstrap & CSRF protection](../stories/auth-session-bootstrap-csrf.md) — M
-- [Instant session revocation & idle timeout](../stories/auth-revocation-idle-timeout.md) — M
-- [Invite-accept account creation/linking](../stories/auth-invite-accept-hook.md) — M
+- [x] [Sign up for a togglr account](../stories/auth-signup.md) — M — **done**
+- [x] [Log in and log out](../stories/auth-login-logout.md) — M — **done**
+- [x] [Session bootstrap & CSRF protection](../stories/auth-session-bootstrap-csrf.md) — M — **done**
+- [x] [Instant session revocation & idle timeout](../stories/auth-revocation-idle-timeout.md) — M — **done**
+- [ ] [Invite-accept account creation/linking](../stories/auth-invite-accept-hook.md) — M — **⛔ BLOCKED / deferred** to the [Org Workspace & Isolation](./org-workspace-isolation.md) epic (needs the `invites`/`memberships` tables + token validation). Plan after those land.
+
+> **Epic status:** core auth & sessions delivered and verified (4/5 stories). The 5th
+> story is externally blocked on Org Workspace and will be planned there; it is not part
+> of this epic's shippable scope.
 
 ## Open Questions
 

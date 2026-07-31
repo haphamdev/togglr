@@ -1,6 +1,6 @@
 ---
 title: Web login/signup forms + logout wiring
-status: draft
+status: done
 owner: hapham
 date: 2026-07-30
 parent: tasks/stories/auth-login-logout.md

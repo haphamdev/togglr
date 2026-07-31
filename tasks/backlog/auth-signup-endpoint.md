@@ -1,6 +1,6 @@
 ---
 title: POST /auth/signup endpoint
-status: draft
+status: done
 owner: hapham
 date: 2026-07-30
 parent: tasks/stories/auth-signup.md
