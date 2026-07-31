@@ -152,6 +152,7 @@ describe("EnvironmentKeysRoute environment rename", () => {
             key: "prod",
             name: "Production",
             rulesetVersion: 1,
+            archivedAt: null,
             createdAt: "2026-07-31T00:00:00.000Z",
           },
         });
@@ -163,6 +164,7 @@ describe("EnvironmentKeysRoute environment rename", () => {
             key: "prod",
             name: "Prod",
             rulesetVersion: 1,
+            archivedAt: null,
             createdAt: "2026-07-31T00:00:00.000Z",
           },
         });

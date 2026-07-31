@@ -93,9 +93,27 @@ describe("Projects & environments (integration)", () => {
     expect(res.status).toBe(201);
     expect(res.body.project).toEqual({ key, name: "Checkout", createdAt: expect.any(String) });
     expect(res.body.environments).toEqual([
-      { key: "development", name: "Development", rulesetVersion: 0, createdAt: expect.any(String) },
-      { key: "staging", name: "Staging", rulesetVersion: 0, createdAt: expect.any(String) },
-      { key: "production", name: "Production", rulesetVersion: 0, createdAt: expect.any(String) },
+      {
+        key: "development",
+        name: "Development",
+        rulesetVersion: 0,
+        archivedAt: null,
+        createdAt: expect.any(String),
+      },
+      {
+        key: "staging",
+        name: "Staging",
+        rulesetVersion: 0,
+        archivedAt: null,
+        createdAt: expect.any(String),
+      },
+      {
+        key: "production",
+        name: "Production",
+        rulesetVersion: 0,
+        archivedAt: null,
+        createdAt: expect.any(String),
+      },
     ]);
 
     const dup = await createProject(owner, slug, key, "Again");
@@ -178,6 +196,7 @@ describe("Projects & environments (integration)", () => {
       key: "canary",
       name: "Canary",
       rulesetVersion: 0,
+      archivedAt: null,
       createdAt: expect.any(String),
     });
 
@@ -205,6 +224,7 @@ describe("Projects & environments (integration)", () => {
       key: "production",
       name: "Production",
       rulesetVersion: 0,
+      archivedAt: null,
       createdAt: expect.any(String),
     });
 
@@ -225,5 +245,92 @@ describe("Projects & environments (integration)", () => {
       .set("Cookie", owner.cookie);
     expect(unknownProjectEnvs.status).toBe(404);
     expect(unknownProjectEnvs.body.error.code).toBe("LOST_OWL");
+  });
+
+  it("archives/restores an env, still renames, empty body → CLUMSY_OWL, member → SNEAKY_OWL, unknown → LOST_OWL", async () => {
+    const owner = await register();
+    const { slug, orgId } = await makeOrg(owner);
+    const projectKey = `arc-${randomUUID().slice(0, 6)}`;
+    await createProject(owner, slug, projectKey, "Arc");
+    const base = `/api/v1/orgs/${slug}/projects/${projectKey}/environments`;
+
+    await request(server())
+      .post(base)
+      .set("Cookie", owner.cookie)
+      .set("X-CSRF-Token", owner.csrf)
+      .send({ key: "canary", name: "Canary" })
+      .expect(201);
+
+    // Archive: sets archivedAt; list still returns it (client filters).
+    const archived = await request(server())
+      .patch(`${base}/canary`)
+      .set("Cookie", owner.cookie)
+      .set("X-CSRF-Token", owner.csrf)
+      .send({ archived: true });
+    expect(archived.status).toBe(200);
+    expect(archived.body.environment.archivedAt).toEqual(expect.any(String));
+
+    const list = await request(server()).get(base).set("Cookie", owner.cookie);
+    const canaryRow = list.body.environments.find((e: { key: string }) => e.key === "canary");
+    expect(canaryRow.archivedAt).toEqual(expect.any(String));
+
+    // Re-archiving is idempotent: archived_at is preserved (COALESCE), not bumped.
+    const rearchived = await request(server())
+      .patch(`${base}/canary`)
+      .set("Cookie", owner.cookie)
+      .set("X-CSRF-Token", owner.csrf)
+      .send({ archived: true });
+    expect(rearchived.status).toBe(200);
+    expect(rearchived.body.environment.archivedAt).toBe(archived.body.environment.archivedAt);
+
+    // Restore: clears archivedAt.
+    const restored = await request(server())
+      .patch(`${base}/canary`)
+      .set("Cookie", owner.cookie)
+      .set("X-CSRF-Token", owner.csrf)
+      .send({ archived: false });
+    expect(restored.status).toBe(200);
+    expect(restored.body.environment.archivedAt).toBeNull();
+
+    // Rename still works and leaves archivedAt untouched.
+    const renamed = await request(server())
+      .patch(`${base}/canary`)
+      .set("Cookie", owner.cookie)
+      .set("X-CSRF-Token", owner.csrf)
+      .send({ name: "Canary (EU)" });
+    expect(renamed.status).toBe(200);
+    expect(renamed.body.environment.name).toBe("Canary (EU)");
+    expect(renamed.body.environment.archivedAt).toBeNull();
+
+    // Empty body → CLUMSY_OWL.
+    const empty = await request(server())
+      .patch(`${base}/canary`)
+      .set("Cookie", owner.cookie)
+      .set("X-CSRF-Token", owner.csrf)
+      .send({});
+    expect(empty.status).toBe(400);
+    expect(empty.body.error.code).toBe("CLUMSY_OWL");
+
+    // Member cannot archive → SNEAKY_OWL.
+    const member = await register();
+    await sql`
+      INSERT INTO memberships (organization_id, user_id, role) VALUES (${orgId}, ${member.id}, 'member')
+    `.execute(admin);
+    const denied = await request(server())
+      .patch(`${base}/canary`)
+      .set("Cookie", member.cookie)
+      .set("X-CSRF-Token", member.csrf)
+      .send({ archived: true });
+    expect(denied.status).toBe(403);
+    expect(denied.body.error.code).toBe("SNEAKY_OWL");
+
+    // Unknown env → LOST_OWL.
+    const unknown = await request(server())
+      .patch(`${base}/nope`)
+      .set("Cookie", owner.cookie)
+      .set("X-CSRF-Token", owner.csrf)
+      .send({ archived: true });
+    expect(unknown.status).toBe(404);
+    expect(unknown.body.error.code).toBe("LOST_OWL");
   });
 });

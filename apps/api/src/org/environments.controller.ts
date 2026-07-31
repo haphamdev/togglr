@@ -25,8 +25,12 @@ const CreateEnvSchema = z.object({
 });
 type CreateEnvBody = z.infer<typeof CreateEnvSchema>;
 
-const RenameSchema = z.object({ name: z.string().min(1) });
-type RenameBody = z.infer<typeof RenameSchema>;
+const UpdateSchema = z
+  .object({ name: z.string().min(1).optional(), archived: z.boolean().optional() })
+  .refine((v) => v.name !== undefined || v.archived !== undefined, {
+    message: "name or archived is required",
+  });
+type UpdateBody = z.infer<typeof UpdateSchema>;
 
 @Controller("orgs/:orgSlug/projects/:projectKey/environments")
 @UseGuards(OrgContextGuard, RolesGuard)
@@ -59,11 +63,11 @@ export class EnvironmentsController {
 
   @Patch(":envKey")
   @Roles("admin")
-  async rename(
+  async update(
     @Param("projectKey") projectKey: string,
     @Param("envKey") envKey: string,
-    @Body(new ZodValidationPipe(RenameSchema)) body: RenameBody,
+    @Body(new ZodValidationPipe(UpdateSchema)) body: UpdateBody,
   ): Promise<{ environment: Environment }> {
-    return { environment: await this.environments.rename(projectKey, envKey, body.name) };
+    return { environment: await this.environments.update(projectKey, envKey, body) };
   }
 }
