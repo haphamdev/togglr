@@ -34,6 +34,14 @@ Do not batch steps, skip the `ask` pause, or run ahead. If a step reveals the ne
 
 When writing or reviewing code, follow existing NestJS module conventions, keep tenant isolation invariants intact (never bypass RLS / tenant scoping), and prefer local in-process evaluation paths for anything on the SDK hot path.
 
+## Testing & CI
+
+Integration tests run against the real backing services declared in `docker-compose.yml`. Keep CI in sync with what the tests actually need:
+
+- The CI `integration` job (`.github/workflows/ci.yml`) must start **every** backing service its tests touch via `docker compose up -d --wait …`, not a subset. When you add an integration test — or a code path it exercises — that talks to a new service, add that service to the CI startup list in the same change. Treat the CI service list and `docker-compose.yml` as one thing that must not drift.
+- A missing service rarely fails loudly: handlers translate an unreachable dependency into an HTTP error (e.g. an invite send failure becomes `503 DIZZY_OWL`), so the test fails with a confusing `503 vs 201` rather than a connection error. Treat unexplained `503`/`ECONNREFUSED` in an integration run as a possibly-unprovisioned service first, before suspecting the assertion.
+- Before relying on CI, verify service-dependent changes by running the affected `test:int` against the full compose stack locally.
+
 ## Asking me questions
 
 When you ask me a clarifying question or present options, **always**:
