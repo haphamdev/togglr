@@ -1,6 +1,6 @@
 ---
 title: Wire project & environment rename in the web dashboard
-status: approved
+status: done
 owner: hapham
 date: 2026-07-31
 parent: tasks/stories/org-rename-projects-environments-ui.md

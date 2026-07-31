@@ -1,6 +1,6 @@
 ---
 title: Org Workspace & Isolation
-status: in-progress
+status: done
 owner: hapham
 date: 2026-07-28
 parent: docs/specs/togglr-platform.md

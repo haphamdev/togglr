@@ -1,6 +1,6 @@
 ---
 title: Gate member management controls by role in the dashboard
-status: approved
+status: done
 owner: hapham
 date: 2026-07-31
 parent: tasks/epics/org-workspace-isolation.md

@@ -1,6 +1,6 @@
 ---
 title: Gate members-table controls by role in the web dashboard
-status: approved
+status: done
 owner: hapham
 date: 2026-07-31
 parent: tasks/stories/org-members-control-gating-ui.md

@@ -1,6 +1,6 @@
 ---
 title: Rename projects & environments in the dashboard
-status: approved
+status: done
 owner: hapham
 date: 2026-07-31
 parent: tasks/epics/org-workspace-isolation.md
