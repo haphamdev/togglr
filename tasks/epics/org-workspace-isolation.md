@@ -68,11 +68,21 @@ what this epic establishes.
 - [Create & manage environments](../stories/org-environments.md) — M
 - [Issue, rotate & revoke SDK keys](../stories/org-sdk-keys.md) — L
 
-## Open Questions
+## Resolved Decisions
 
-- [ ] RLS enforcement mechanism (design-doc handoff): transaction-scoped context +
-      dedicated non-privileged DB role, safe under connection pooling.
-- [ ] SDK key rotation grace-window default duration and how consumers are notified.
-- [ ] Invite expiry and re-send behavior; can invitees have a pending state before
-      accepting?
-- [ ] Environment model: fixed set (dev/staging/prod) or fully user-defined?
+All epic open questions were resolved against the approved
+[Control Plane & Data Model](../../docs/design/control-plane-data-model.md) doc and the
+accepted [RLS ADR](../../docs/design/adr-rls-tenant-isolation.md):
+
+- [x] **RLS enforcement:** Postgres RLS keyed on a transaction-scoped `SET LOCAL
+      app.current_org`, API as the non-privileged `togglr_app` role (no `BYPASSRLS`), via a
+      per-request `TransactionRunner`. Unset context reads 0 rows (fail-closed); boot
+      assertion refuses a privileged role. Foundation already stood up the role + policy
+      pattern.
+- [x] **SDK-key rotation:** grace window **24 h, configurable**; issuing a new key sets the
+      old key's `expires_at = now() + grace`, both authenticate until it lapses. **No active
+      rotation notification** for MVP — grace-window + UI-visible expiry only.
+- [x] **Invites:** `pending`/`accepted`/`expired` states, hashed token, re-send regenerates
+      the token. **Expiry: 7 days.**
+- [x] **Environment model:** **user-defined** environments (not a fixed dev/staging/prod
+      set), each with its own SDK-key namespace and monotonic `ruleset_version`.
