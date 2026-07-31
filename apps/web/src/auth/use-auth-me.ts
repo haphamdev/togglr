@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import type { Membership } from "@togglr/shared-types";
 import { apiFetch } from "../api/client";
 
 export interface AuthUser {
@@ -7,11 +8,7 @@ export interface AuthUser {
   name: string;
 }
 
-export interface Membership {
-  slug: string;
-  name: string;
-  role: string;
-}
+export type { Membership };
 
 /** GET /auth/me response (togglr-api.md:187-201). */
 export interface AuthMeResponse {

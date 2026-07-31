@@ -1,6 +1,6 @@
 ---
 title: Invite-accept account creation/linking
-status: approved
+status: done
 owner: hapham
 date: 2026-07-30
 parent: tasks/epics/auth-sessions.md
@@ -8,17 +8,6 @@ size: M
 ---
 
 # Invite-accept account creation/linking
-
-> **⛔ BLOCKED — deferred to a later plan.** This story depends on the **Org Workspace
-> & Isolation** epic (`tasks/epics/org-workspace-isolation.md`), whose `org-invite-teammates`
-> story owns the `invites` table, invite-token issuance/validation, and the `memberships`
-> insert. The auth-owned half here (create/link user + start session on accept) cannot be
-> built until those exist. The rest of the Auth & Sessions epic shipped without it; the
-> `memberships: []` seam in `/auth/me` and login is the integration point.
->
-> **Unblock when:** the `invites` and `memberships` tables + token validation land in Org
-> Workspace. Plan this story immediately after, before or alongside `org-invite-teammates`'s
-> UI half.
 
 ## Story
 

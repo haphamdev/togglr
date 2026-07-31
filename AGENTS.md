@@ -10,15 +10,15 @@ togglr ships three surfaces:
 
 ## Plan Execution (Working Agreement)
 
-When executing an approved plan, work **one step at a time** and **pause for review between steps** — never implement a multi-step plan in a single pass. The loop is:
+When executing an approved plan, work **one step at a time** and **pause for review between steps** — never implement a multi-step plan in a single pass. The plan itself will **explicitly instruct you to use the `ask` tool** at each step boundary to pause execution for manual test and review before proceeding — treat that instruction as a hard gate, not a suggestion. The loop is:
 
-1. **Plan** — agree on the steps.
+1. **Plan** — agree on the steps. Each step ends with an explicit phase gate that names the `ask` prompt to raise.
 2. **Implement one step** — make only that step's changes.
-3. **Pause for review** — stop and let me review the change before continuing.
-4. **Test** — verify that step (run the relevant test/command/smoke).
-5. **Continue** — proceed to the next step only after I've reviewed and the step is verified.
+3. **Test** — verify that step (run the relevant test/command/smoke).
+4. **Pause via `ask`** — call the `ask` tool exactly as the plan's phase gate specifies, and stop. This lets me run my own manual test and sign off before you touch the next step.
+5. **Continue** — proceed to the next step only after I've reviewed and explicitly chosen to proceed through the `ask` prompt.
 
-Do not batch steps, skip the pause, or run ahead. If a step reveals the next one is trivial or tightly coupled, still stop and say so rather than continuing unprompted.
+Do not batch steps, skip the `ask` pause, or run ahead. If a step reveals the next one is trivial or tightly coupled, still stop at the `ask` gate and say so rather than continuing unprompted.
 
 ## Tech Stack & Conventions
 
@@ -33,6 +33,14 @@ Do not batch steps, skip the pause, or run ahead. If a step reveals the next one
 - **Repo layout:** monorepo — `apps/api` (NestJS), `apps/web` (React SPA), `packages/sdk` (client SDK), `packages/eval-core` (pure, shared evaluation engine used by SDK + API), `packages/shared-types` (DTOs/ruleset/version types shared across all).
 
 When writing or reviewing code, follow existing NestJS module conventions, keep tenant isolation invariants intact (never bypass RLS / tenant scoping), and prefer local in-process evaluation paths for anything on the SDK hot path.
+
+## Testing & CI
+
+Integration tests run against the real backing services declared in `docker-compose.yml`. Keep CI in sync with what the tests actually need:
+
+- The CI `integration` job (`.github/workflows/ci.yml`) must start **every** backing service its tests touch via `docker compose up -d --wait …`, not a subset. When you add an integration test — or a code path it exercises — that talks to a new service, add that service to the CI startup list in the same change. Treat the CI service list and `docker-compose.yml` as one thing that must not drift.
+- A missing service rarely fails loudly: handlers translate an unreachable dependency into an HTTP error (e.g. an invite send failure becomes `503 DIZZY_OWL`), so the test fails with a confusing `503 vs 201` rather than a connection error. Treat unexplained `503`/`ECONNREFUSED` in an integration run as a possibly-unprovisioned service first, before suspecting the assertion.
+- Before relying on CI, verify service-dependent changes by running the affected `test:int` against the full compose stack locally.
 
 ## Asking me questions
 

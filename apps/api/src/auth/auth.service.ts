@@ -85,6 +85,18 @@ export class AuthService {
     return row ?? null;
   }
 
+  /** Load a user's public profile by email (lowercased), or null. */
+  async findByEmail(email: string): Promise<PublicUser | null> {
+    const row = await this.query(() =>
+      this.db
+        .selectFrom("users")
+        .select(["id", "email", "name"])
+        .where("email", "=", email.toLowerCase())
+        .executeTakeFirst(),
+    );
+    return row ?? null;
+  }
+
   /** Map any datastore error to 503 DIZZY_OWL; never leak the driver error. */
   private async query<T>(fn: () => Promise<T>): Promise<T> {
     try {

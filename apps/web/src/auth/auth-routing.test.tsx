@@ -33,6 +33,16 @@ const authMeOk = {
   csrfToken: "csrf-token-42",
 };
 
+/** Path-aware success mock: /auth/me resolves the session; /orgs resolves empty
+ * so the index route renders the workspace shell without navigating. */
+function mockAuthedApi() {
+  apiFetchMock.mockImplementation((path: string) => {
+    if (path === "/auth/me") return Promise.resolve(authMeOk);
+    if (path === "/orgs") return Promise.resolve({ orgs: [] });
+    return Promise.resolve(undefined);
+  });
+}
+
 let eventSourceMock: ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
@@ -54,16 +64,16 @@ describe("auth bootstrap + routing", () => {
   });
 
   it("renders the authed shell and stores the CSRF token on 200", async () => {
-    apiFetchMock.mockResolvedValue(authMeOk);
+    mockAuthedApi();
     renderApp(["/"]);
-    expect(await screen.findByRole("heading", { name: "Dashboard" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Log out" })).toBeInTheDocument();
     expect(screen.getByText("ada@example.com")).toBeInTheDocument();
     await waitFor(() => expect(getCsrfToken()).toBe("csrf-token-42"));
   });
 
   it("redirects a protected route to /login when there is no session", async () => {
     apiFetchMock.mockRejectedValue(new ApiError("SLEEPY_OWL", "no session", 401));
-    renderApp(["/settings"]);
+    renderApp(["/orgs/acme/settings"]);
     expect(await screen.findByText("Sign in to togglr")).toBeInTheDocument();
   });
 
@@ -84,9 +94,9 @@ describe("auth bootstrap + routing", () => {
   });
 
   it("opens no SSE connection during bootstrap", async () => {
-    apiFetchMock.mockResolvedValue(authMeOk);
+    mockAuthedApi();
     renderApp(["/"]);
-    await screen.findByRole("heading", { name: "Dashboard" });
+    await screen.findByRole("button", { name: "Log out" });
     expect(eventSourceMock).not.toHaveBeenCalled();
   });
 });
