@@ -18,6 +18,7 @@
     "@nestjs/config": "^4.0.4",
     "@nestjs/core": "^11.1.28",
     "@nestjs/platform-express": "^11.1.28",
+    "@node-rs/argon2": "^2.0.2",
     "@togglr/eval-core": "workspace:*",
     "@togglr/shared-types": "workspace:*",
     "ioredis": "^5.11.1",
@@ -30,6 +31,7 @@
   "devDependencies": {
     "@nestjs/testing": "^11.1.28",
     "@swc/core": "^1.15.47",
+    "@types/express": "^5.0.6",
     "@types/pg": "^8.20.0",
     "@types/supertest": "^7.2.1",
     "node-pg-migrate": "^9.0.0",

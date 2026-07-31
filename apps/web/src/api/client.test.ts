@@ -53,6 +53,20 @@ describe("apiFetch", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it("sends a mutation without X-CSRF-Token when csrfExempt (empty token store)", async () => {
+    // csrf store is null (beforeEach); a csrfExempt POST must still go through.
+    await apiFetch("/auth/login", {
+      method: "POST",
+      body: { email: "a@b.com", password: "correct-horse" },
+      csrfExempt: true,
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe(`${API_BASE}/auth/login`);
+    expect(init.headers["X-CSRF-Token"]).toBeUndefined();
+    expect(init.credentials).toBe("include");
+  });
+
   it("omits X-CSRF-Token on a GET", async () => {
     setCsrfToken("csrf-abc");
     await apiFetch("/auth/me");

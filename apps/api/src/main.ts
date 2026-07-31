@@ -3,11 +3,13 @@ import { NestFactory } from "@nestjs/core";
 import type { Kysely } from "kysely";
 import { AppModule } from "./app.module";
 import { assertBootSafety } from "./bootstrap/boot-safety";
+import { configureApp } from "./bootstrap/configure-app";
 import { AppConfigService } from "./config/app-config.service";
 import { type Database, KYSELY } from "./db/database";
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
+  configureApp(app);
   app.enableShutdownHooks();
 
   // Refuse to start unless the DB role is non-privileged and RLS is active.

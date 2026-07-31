@@ -34,6 +34,11 @@ export interface ApiRequestOptions {
   body?: unknown;
   headers?: Record<string, string>;
   signal?: AbortSignal;
+  /**
+   * Skip the local CSRF-token requirement for bootstrap mutations (login/signup)
+   * that legitimately run before a session — and thus a CSRF token — exists.
+   */
+  csrfExempt?: boolean;
 }
 
 /**
@@ -52,7 +57,7 @@ export async function apiFetch<T = unknown>(
   if (options.body !== undefined) {
     headers["Content-Type"] = "application/json";
   }
-  if (MUTATING_METHODS[method]) {
+  if (MUTATING_METHODS[method] && !options.csrfExempt) {
     const token = getCsrfToken();
     if (!token) {
       // A mutating request without a CSRF token cannot succeed (togglr-api.md:31-38).

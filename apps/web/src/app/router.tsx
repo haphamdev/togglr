@@ -3,11 +3,13 @@ import { RequireAuth } from "../auth/require-auth";
 import { DashboardRoute } from "../routes/dashboard";
 import { LoginRoute } from "../routes/login";
 import { SettingsRoute } from "../routes/settings";
+import { SignupRoute } from "../routes/signup";
 import { RootLayout } from "./layout";
 
 /** Route tree shared by the browser router (main.tsx) and route tests. */
 export const appRoutes: RouteObject[] = [
   { path: "/login", element: <LoginRoute /> },
+  { path: "/signup", element: <SignupRoute /> },
   {
     path: "/",
     element: (

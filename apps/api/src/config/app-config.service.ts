@@ -22,6 +22,18 @@ export class AppConfigService {
     return this.config.get("PORT", { infer: true });
   }
 
+  get sessionIdleTtlS(): number {
+    return this.config.get("SESSION_IDLE_TTL_S", { infer: true });
+  }
+
+  get sessionAbsoluteTtlS(): number {
+    return this.config.get("SESSION_ABSOLUTE_TTL_S", { infer: true });
+  }
+
+  get cookieSecure(): boolean {
+    return this.config.get("COOKIE_SECURE", { infer: true });
+  }
+
   /** pg Pool tuning, keyed by pg's own option names for a direct spread. */
   get dbPoolOptions(): { max: number; connectionTimeoutMillis: number; idleTimeoutMillis: number } {
     return {

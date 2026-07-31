@@ -14,6 +14,15 @@ export const envSchema = z.object({
   DB_POOL_MAX: z.coerce.number().int().positive().default(10),
   DB_POOL_CONNECTION_TIMEOUT_MS: z.coerce.number().int().positive().default(5000),
   DB_POOL_IDLE_TIMEOUT_MS: z.coerce.number().int().nonnegative().default(10000),
+  // Session lifecycle (Redis-backed): 30-min idle TTL, 12-h absolute cap.
+  SESSION_IDLE_TTL_S: z.coerce.number().int().positive().default(1800),
+  SESSION_ABSOLUTE_TTL_S: z.coerce.number().int().positive().default(43200),
+  // Session-cookie Secure flag. Default true (prod); set false for the local
+  // http://localhost dev SPA served via the Vite proxy.
+  COOKIE_SECURE: z
+    .enum(["true", "false"])
+    .default("true")
+    .transform((v) => v === "true"),
 });
 // Migration-only secrets are deliberately excluded from the API's boot surface:
 // the API runs least-privilege as togglr_app and never holds the superuser DSN.

@@ -1,5 +1,9 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { apiFetch } from "../api/client";
+import { setCsrfToken } from "../api/csrf-store";
 import { useAuth } from "../auth/auth-context";
+import { authMeQueryKey } from "../auth/use-auth-me";
 import { Button } from "../components/ui/button";
 import { cn } from "../lib/utils";
 
@@ -12,6 +16,18 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
 /** Persistent app shell: top bar + left nav + routed content outlet. */
 export function RootLayout() {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const logout = useMutation({
+    // Authenticated mutation: the CSRF token is in the store, so NOT csrfExempt.
+    mutationFn: () => apiFetch("/auth/logout", { method: "POST" }),
+    onSuccess: async () => {
+      setCsrfToken(null);
+      await queryClient.invalidateQueries({ queryKey: authMeQueryKey });
+      navigate("/login");
+    },
+  });
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50">
@@ -20,6 +36,9 @@ export function RootLayout() {
         <div className="flex items-center gap-3">
           <span className="text-sm text-slate-500">{user?.email ?? ""}</span>
           <Button variant="default">New flag</Button>
+          <Button variant="ghost" onClick={() => logout.mutate()} disabled={logout.isPending}>
+            {logout.isPending ? "Logging out…" : "Log out"}
+          </Button>
         </div>
       </header>
       <div className="flex flex-1">
