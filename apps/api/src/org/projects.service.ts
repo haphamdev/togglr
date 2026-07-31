@@ -12,6 +12,7 @@ interface EnvRow {
   key: string;
   name: string;
   ruleset_version: number | string;
+  archived_at: Date | null;
   created_at: Date;
 }
 
@@ -40,6 +41,7 @@ function toEnv(r: EnvRow): Environment {
     key: r.key,
     name: r.name,
     rulesetVersion: Number(r.ruleset_version),
+    archivedAt: r.archived_at ? toIso(r.archived_at) : null,
     createdAt: toIso(r.created_at),
   };
 }
@@ -82,7 +84,7 @@ export class ProjectsService {
             name: e.name,
           })),
         )
-        .returning(["key", "name", "ruleset_version", "created_at"])
+        .returning(["key", "name", "ruleset_version", "archived_at", "created_at"])
         .execute();
 
       const environments = SEED_ENVIRONMENTS.map((seed) => {

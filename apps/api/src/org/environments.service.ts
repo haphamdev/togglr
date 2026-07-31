@@ -9,6 +9,7 @@ interface EnvRow {
   key: string;
   name: string;
   ruleset_version: number | string;
+  archived_at: Date | null;
   created_at: Date;
 }
 
@@ -28,6 +29,7 @@ function toEnv(r: EnvRow): Environment {
     key: r.key,
     name: r.name,
     rulesetVersion: Number(r.ruleset_version),
+    archivedAt: r.archived_at ? toIso(r.archived_at) : null,
     createdAt: toIso(r.created_at),
   };
 }
@@ -61,7 +63,7 @@ export class EnvironmentsService {
             key: input.key,
             name: input.name,
           })
-          .returning(["key", "name", "ruleset_version", "created_at"])
+          .returning(["key", "name", "ruleset_version", "archived_at", "created_at"])
           .executeTakeFirstOrThrow();
         return toEnv(row);
       } catch (err) {
@@ -83,7 +85,7 @@ export class EnvironmentsService {
       const projectId = await this.projectId(trx, projectKey);
       const rows = await trx
         .selectFrom("environments")
-        .select(["key", "name", "ruleset_version", "created_at"])
+        .select(["key", "name", "ruleset_version", "archived_at", "created_at"])
         .where("project_id", "=", projectId)
         .orderBy("created_at")
         .execute();
@@ -97,7 +99,7 @@ export class EnvironmentsService {
       const projectId = await this.projectId(trx, projectKey);
       const row = await trx
         .selectFrom("environments")
-        .select(["key", "name", "ruleset_version", "created_at"])
+        .select(["key", "name", "ruleset_version", "archived_at", "created_at"])
         .where("project_id", "=", projectId)
         .where("key", "=", envKey)
         .executeTakeFirst();
@@ -106,16 +108,23 @@ export class EnvironmentsService {
     });
   }
 
-  async rename(projectKey: string, envKey: string, name: string): Promise<Environment> {
+  async update(
+    projectKey: string,
+    envKey: string,
+    patch: { name?: string; archived?: boolean },
+  ): Promise<Environment> {
     return this.guarded(async () => {
       const trx = this.tenant.trx;
       const projectId = await this.projectId(trx, projectKey);
+      const set: { name?: string; archived_at?: Date | null } = {};
+      if (patch.name !== undefined) set.name = patch.name;
+      if (patch.archived !== undefined) set.archived_at = patch.archived ? new Date() : null;
       const row = await trx
         .updateTable("environments")
-        .set({ name })
+        .set(set)
         .where("project_id", "=", projectId)
         .where("key", "=", envKey)
-        .returning(["key", "name", "ruleset_version", "created_at"])
+        .returning(["key", "name", "ruleset_version", "archived_at", "created_at"])
         .executeTakeFirst();
       if (!row) throw new DomainException("LOST_OWL", 404, "No such environment in this project");
       return toEnv(row);

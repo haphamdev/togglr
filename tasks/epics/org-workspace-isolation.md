@@ -22,6 +22,7 @@ what this epic establishes.
 ### Included
 
 - Org/project/environment hierarchy (CRUD).
+- Archive & restore an environment (soft, reversible; dashboard lifecycle — existing SDK keys keep serving until revoked).
 - Coarse org roles: owner / admin / member, gating management actions.
 - Team membership via **email-based invites**: send invite link → invitee accepts →
   joins the org with a role (account creation/linking handled by Auth & Sessions).
@@ -69,6 +70,7 @@ what this epic establishes.
 - [Issue, rotate & revoke SDK keys](../stories/org-sdk-keys.md) — L
 - [Rename projects & environments in the dashboard](../stories/org-rename-projects-environments-ui.md) — S
 - [Gate member management controls by role in the dashboard](../stories/org-members-control-gating-ui.md) — S
+- [Archive & restore environments in the dashboard](../stories/org-archive-environment.md) — M
 
 ## Resolved Decisions
 

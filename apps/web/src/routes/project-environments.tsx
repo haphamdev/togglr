@@ -15,7 +15,11 @@ import {
   TableRow,
 } from "../components/ui/table";
 import { errorMessage } from "../org/error-messages";
-import { useCreateEnvironment, useEnvironments } from "../org/use-environments";
+import {
+  useArchiveEnvironment,
+  useCreateEnvironment,
+  useEnvironments,
+} from "../org/use-environments";
 import { useProject, useRenameProject } from "../org/use-projects";
 
 export function ProjectEnvironmentsRoute() {
@@ -43,6 +47,10 @@ export function ProjectEnvironmentsRoute() {
 
   const environments = useEnvironments(slug, pk);
   const create = useCreateEnvironment(slug, pk);
+
+  const [showArchived, setShowArchived] = useState(false);
+  const archive = useArchiveEnvironment(slug, pk);
+  const archiveError = errorMessage(archive.error);
 
   const [key, setKey] = useState("");
   const [name, setName] = useState("");
@@ -107,6 +115,19 @@ export function ProjectEnvironmentsRoute() {
         <CardHeader>
           <CardTitle>Environments</CardTitle>
         </CardHeader>
+        <label className="flex items-center gap-2 px-1 text-sm text-slate-600">
+          <input
+            type="checkbox"
+            checked={showArchived}
+            onChange={(e) => setShowArchived(e.target.checked)}
+          />{" "}
+          Show archived
+        </label>
+        {archiveError ? (
+          <p role="alert" className="text-sm text-red-600">
+            {archiveError}
+          </p>
+        ) : null}
         {environments.isPending ? (
           <p role="status" className="text-sm text-slate-500">
             Loading…
@@ -122,11 +143,15 @@ export function ProjectEnvironmentsRoute() {
                 <TableHeaderCell>Name</TableHeaderCell>
                 <TableHeaderCell>Key</TableHeaderCell>
                 <TableHeaderCell>Version</TableHeaderCell>
+                {canManage ? <TableHeaderCell>Actions</TableHeaderCell> : null}
               </TableRow>
             </TableHead>
             <TableBody>
-              {environments.data.environments.map((env) => (
-                <TableRow key={env.key}>
+              {(showArchived
+                ? environments.data.environments
+                : environments.data.environments.filter((e) => e.archivedAt === null)
+              ).map((env) => (
+                <TableRow key={env.key} className={env.archivedAt ? "opacity-60" : undefined}>
                   <TableCell>
                     <Link
                       to={`/orgs/${slug}/projects/${pk}/environments/${env.key}`}
@@ -134,9 +159,26 @@ export function ProjectEnvironmentsRoute() {
                     >
                       {env.name}
                     </Link>
+                    {env.archivedAt ? (
+                      <span className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-500">
+                        Archived
+                      </span>
+                    ) : null}
                   </TableCell>
                   <TableCell>{env.key}</TableCell>
                   <TableCell>v{env.rulesetVersion}</TableCell>
+                  {canManage ? (
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        onClick={() =>
+                          archive.mutate({ envKey: env.key, archived: env.archivedAt === null })
+                        }
+                      >
+                        {env.archivedAt ? "Restore" : "Archive"}
+                      </Button>
+                    </TableCell>
+                  ) : null}
                 </TableRow>
               ))}
             </TableBody>

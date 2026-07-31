@@ -59,6 +59,7 @@ export interface Environment {
   key: string;
   name: string;
   rulesetVersion: number;
+  archivedAt: string | null;
   createdAt: string;
 }
 

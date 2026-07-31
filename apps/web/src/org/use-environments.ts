@@ -60,3 +60,18 @@ export function useRenameEnvironment(slug: string, projectKey: string, envKey: s
     },
   });
 }
+
+export function useArchiveEnvironment(slug: string, projectKey: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ envKey, archived }: { envKey: string; archived: boolean }) =>
+      apiFetch<{ environment: Environment }>(
+        `/orgs/${slug}/projects/${projectKey}/environments/${envKey}`,
+        { method: "PATCH", body: { archived } },
+      ),
+    onSuccess: (_data, { envKey }) => {
+      qc.invalidateQueries({ queryKey: environmentsQueryKey(slug, projectKey) });
+      qc.invalidateQueries({ queryKey: environmentQueryKey(slug, projectKey, envKey) });
+    },
+  });
+}

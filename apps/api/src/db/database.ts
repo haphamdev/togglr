@@ -58,6 +58,7 @@ export interface EnvironmentsTable {
   key: string;
   name: string;
   ruleset_version: Generated<number>;
+  archived_at: Generated<Date | null>;
   created_at: Generated<Date>;
 }
 

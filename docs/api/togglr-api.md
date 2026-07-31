@@ -505,7 +505,7 @@ link (Mailhog in dev).
 | `key` | string | yes | Immutable, `^[a-z0-9-]+$`, unique per project. |
 | `name` | string | yes | Display name. |
 
-**Response (201):** `{ "environment": { "key": "canary", "name": "Canary", "rulesetVersion": 0, "createdAt": "…" } }`
+**Response (201):** `{ "environment": { "key": "canary", "name": "Canary", "rulesetVersion": 0, "archivedAt": null, "createdAt": "…" } }`
 
 **Errors:**
 
@@ -517,19 +517,28 @@ link (Mailhog in dev).
 
 **Description:** List environments (with current ruleset version).
 **Auth:** session + membership.
-**Response (200):** `{ "environments": [ { "key", "name", "rulesetVersion", "createdAt" } ] }`
+**Response (200):** `{ "environments": [ { "key", "name", "rulesetVersion", "archivedAt", "createdAt" } ] }`
 
 ### GET /orgs/:orgSlug/projects/:projectKey/environments/:envKey
 
 **Description:** Environment detail.
 **Auth:** session + membership.
-**Response (200):** `{ "environment": { "key", "name", "rulesetVersion", "createdAt" } }`
+**Response (200):** `{ "environment": { "key", "name", "rulesetVersion", "archivedAt", "createdAt" } }`
 
 ### PATCH /orgs/:orgSlug/projects/:projectKey/environments/:envKey
 
-**Description:** Rename the environment (`key` immutable).
+**Description:** Rename or archive the environment (`key` immutable). Archiving is reversible and dashboard-only — the env's SDK keys keep serving until revoked.
 **Auth:** session + `admin`.
-**Request:** `{ "name": "Prod (EU)" }`
+
+**Request:**
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `name` | string | no | New display name. |
+| `archived` | boolean | no | `true` sets `archivedAt`, `false` clears it. |
+
+At least one of `name` / `archived` is required (empty body → `400 CLUMSY_OWL`).
+
 **Response (200):** the updated environment.
 
 ---
@@ -843,9 +852,11 @@ sends `If-None-Match` with its cached version; unchanged ⇒ `304` (bodyless), c
 - [ ] Rate limiting on auth endpoints (login/signup/invite-accept) — a spec-noted abuse
   control, deferred as non-blocking; decide the mechanism (per-IP token bucket) when
   hardening.
-- [ ] Destructive deletes (org / project / environment) are omitted in Phase 1 — only flags
-  archive. Deleting an environment with live SDK keys is a footgun (in-flight SDKs would
-  401); defer teardown, and prefer archive-style semantics with grace when added.
+- [ ] Destructive deletes (org / project) are omitted in Phase 1. Deleting an environment
+  with live SDK keys is a footgun (in-flight SDKs would 401); environment teardown is
+  handled instead via reversible archive (`PATCH …/environments/:envKey {archived}`),
+  which is dashboard-only and leaves SDK keys serving until revoked. Org/project hard
+  delete stays deferred; prefer archive-style semantics with grace if added.
 - [ ] Self-service account edits (`PATCH /auth/me` for name, self password change) are
   deferred alongside password reset; add with the invite/email-token machinery later.
 - [ ] SDK-key auth transport: `Authorization: Bearer` (chosen) vs a custom `X-Togglr-Key`
