@@ -24,10 +24,11 @@ export function useCreateProject(slug: string) {
   });
 }
 
-export function useProject(slug: string, key: string) {
+export function useProject(slug: string, key: string, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: projectQueryKey(slug, key),
     queryFn: () => apiFetch<{ project: Project }>(`/orgs/${slug}/projects/${key}`),
+    enabled: options?.enabled,
   });
 }
 

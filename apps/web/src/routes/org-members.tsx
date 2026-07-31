@@ -3,6 +3,7 @@
 import type { OrgRole } from "@togglr/shared-types";
 import { type FormEvent, useState } from "react";
 import { useParams } from "react-router-dom";
+import { useOrgRole } from "../auth/auth-context";
 import { Button } from "../components/ui/button";
 import { Card, CardHeader, CardTitle } from "../components/ui/card";
 import { Input } from "../components/ui/input";
@@ -21,6 +22,9 @@ import { useMembers, useRemoveMember, useUpdateMemberRole } from "../org/use-mem
 
 export function OrgMembersRoute() {
   const slug = useParams().orgSlug as string;
+
+  const callerRole = useOrgRole(slug);
+  const isOwner = callerRole === "owner";
 
   const members = useMembers(slug);
   const updateRole = useUpdateMemberRole(slug);
@@ -79,22 +83,28 @@ export function OrgMembersRoute() {
                     <TableCell>{m.email}</TableCell>
                     <TableCell>{m.name ?? "—"}</TableCell>
                     <TableCell>
-                      <Select
-                        aria-label={`Role for ${m.email}`}
-                        value={m.role}
-                        onChange={(e) =>
-                          updateRole.mutate({ userId: m.userId, role: e.target.value as OrgRole })
-                        }
-                      >
-                        <option value="owner">owner</option>
-                        <option value="admin">admin</option>
-                        <option value="member">member</option>
-                      </Select>
+                      {isOwner ? (
+                        <Select
+                          aria-label={`Role for ${m.email}`}
+                          value={m.role}
+                          onChange={(e) =>
+                            updateRole.mutate({ userId: m.userId, role: e.target.value as OrgRole })
+                          }
+                        >
+                          <option value="owner">owner</option>
+                          <option value="admin">admin</option>
+                          <option value="member">member</option>
+                        </Select>
+                      ) : (
+                        m.role
+                      )}
                     </TableCell>
                     <TableCell>
-                      <Button variant="ghost" onClick={() => removeMember.mutate(m.userId)}>
-                        Remove
-                      </Button>
+                      {isOwner ? (
+                        <Button variant="ghost" onClick={() => removeMember.mutate(m.userId)}>
+                          Remove
+                        </Button>
+                      ) : null}
                     </TableCell>
                   </TableRow>
                 ))}

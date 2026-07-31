@@ -1,3 +1,4 @@
+import type { OrgRole } from "@togglr/shared-types";
 import { createContext, type ReactNode, useContext, useEffect } from "react";
 import { ApiError } from "../api/client";
 import { setCsrfToken } from "../api/csrf-store";
@@ -53,4 +54,11 @@ export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error("useAuth must be used within an AuthProvider");
   return ctx;
+}
+
+/** The caller's role in `slug`, or undefined if not a member. Reads the globally
+ *  loaded /auth/me memberships — no extra request. */
+export function useOrgRole(slug: string): OrgRole | undefined {
+  const { memberships } = useAuth();
+  return memberships.find((m) => m.slug === slug)?.role;
 }

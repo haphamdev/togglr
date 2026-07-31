@@ -1,11 +1,13 @@
 /** Environment SDK keys route: issue, rotate, and revoke per-environment SDK keys. */
 import type { SdkKeySecret } from "@togglr/shared-types";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { useOrgRole } from "../auth/auth-context";
 import { Button } from "../components/ui/button";
 import { Card, CardHeader, CardTitle } from "../components/ui/card";
 import { Dialog } from "../components/ui/dialog";
 import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
 import {
   Table,
   TableBody,
@@ -15,6 +17,7 @@ import {
   TableRow,
 } from "../components/ui/table";
 import { errorMessage } from "../org/error-messages";
+import { useEnvironment, useRenameEnvironment } from "../org/use-environments";
 import { useIssueKey, useRevokeKey, useRotateKey, useSdkKeys } from "../org/use-sdk-keys";
 
 export function EnvironmentKeysRoute() {
@@ -22,6 +25,24 @@ export function EnvironmentKeysRoute() {
   const slug = orgSlug as string;
   const pk = projectKey as string;
   const ek = envKey as string;
+
+  const callerRole = useOrgRole(slug);
+  const canManage = callerRole === "owner" || callerRole === "admin";
+  const envQuery = useEnvironment(slug, pk, ek, { enabled: canManage });
+  const rename = useRenameEnvironment(slug, pk, ek);
+  const env = envQuery.data?.environment;
+  const [renameName, setRenameName] = useState("");
+  const [saved, setSaved] = useState(false);
+  useEffect(() => {
+    if (env) setRenameName(env.name);
+  }, [env]);
+
+  const onRename = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSaved(false);
+    rename.mutate({ name: renameName }, { onSuccess: () => setSaved(true) });
+  };
+  const renameError = errorMessage(rename.error);
 
   const keys = useSdkKeys(slug, pk, ek);
   const issue = useIssueKey(slug, pk, ek);
@@ -57,6 +78,45 @@ export function EnvironmentKeysRoute() {
 
   return (
     <div className="flex flex-col gap-6">
+      {canManage && env ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Environment settings</CardTitle>
+          </CardHeader>
+          <form className="flex flex-col gap-3" onSubmit={onRename}>
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="env-key">Key</Label>
+              <Input id="env-key" value={env.key} readOnly disabled />
+              <p className="text-xs text-slate-500">The key is permanent and can't be changed.</p>
+            </div>
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="env-name">Name</Label>
+              <Input
+                id="env-name"
+                aria-label="Environment name"
+                value={renameName}
+                onChange={(e) => {
+                  setRenameName(e.target.value);
+                  setSaved(false);
+                }}
+              />
+            </div>
+            {renameError ? (
+              <p role="alert" className="text-sm text-red-600">
+                {renameError}
+              </p>
+            ) : null}
+            {saved ? (
+              <p role="status" className="text-sm text-green-600">
+                Saved.
+              </p>
+            ) : null}
+            <Button type="submit" disabled={rename.isPending}>
+              {rename.isPending ? "Saving…" : "Save"}
+            </Button>
+          </form>
+        </Card>
+      ) : null}
       <Card>
         <CardHeader>
           <CardTitle>SDK keys</CardTitle>
