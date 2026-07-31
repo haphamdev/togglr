@@ -107,6 +107,7 @@ describe("ProjectEnvironmentsRoute archive/restore", () => {
         body: { archived: true },
       }),
     );
+    expect(await screen.findByText("Environment archived.")).toBeInTheDocument();
   });
 
   it("sends PATCH { archived: false } when restoring an archived env", async () => {

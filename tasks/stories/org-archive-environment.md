@@ -48,3 +48,8 @@ adds the same for environments: a reversible, dashboard-only archive — the SDK
 Adds `archived_at` to `environments` + `Environment.archivedAt`; extends env `PATCH` to accept
 `archived`. Mirrors the flag archive contract (togglr-api.md:666-678) and the SdkKey
 soft-lifecycle (revoke = UPDATE, no hard delete). Depends on `org-environments` (API-complete).
+
+Because archive is soft (the row and its `key` persist), an archived env's key stays reserved:
+creating a new env with the same key returns `409 NOISY_DUCK` while the archived one exists.
+Recovery is via Restore, not re-create. Re-archiving an already-archived env is idempotent
+(the original `archived_at` is preserved).

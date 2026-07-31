@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 import type { Environment } from "@togglr/shared-types";
-import type { Transaction } from "kysely";
+import { type RawBuilder, sql, type Transaction } from "kysely";
 import { DomainException } from "../common/domain-exception";
 import type { Database } from "../db/database";
 import { TenantContextService } from "./tenant/tenant-context.service";
@@ -116,9 +116,14 @@ export class EnvironmentsService {
     return this.guarded(async () => {
       const trx = this.tenant.trx;
       const projectId = await this.projectId(trx, projectKey);
-      const set: { name?: string; archived_at?: Date | null } = {};
+      const set: { name?: string; archived_at?: Date | null | RawBuilder<Date> } = {};
       if (patch.name !== undefined) set.name = patch.name;
-      if (patch.archived !== undefined) set.archived_at = patch.archived ? new Date() : null;
+      if (patch.archived !== undefined) {
+        // Re-archiving preserves the original archived_at (COALESCE); restore clears it.
+        set.archived_at = patch.archived ? sql<Date>`coalesce(archived_at, now())` : null;
+      }
+      // Nothing to change (controller's Zod refine normally prevents this).
+      if (Object.keys(set).length === 0) return this.get(projectKey, envKey);
       const row = await trx
         .updateTable("environments")
         .set(set)

@@ -274,6 +274,15 @@ describe("Projects & environments (integration)", () => {
     const canaryRow = list.body.environments.find((e: { key: string }) => e.key === "canary");
     expect(canaryRow.archivedAt).toEqual(expect.any(String));
 
+    // Re-archiving is idempotent: archived_at is preserved (COALESCE), not bumped.
+    const rearchived = await request(server())
+      .patch(`${base}/canary`)
+      .set("Cookie", owner.cookie)
+      .set("X-CSRF-Token", owner.csrf)
+      .send({ archived: true });
+    expect(rearchived.status).toBe(200);
+    expect(rearchived.body.environment.archivedAt).toBe(archived.body.environment.archivedAt);
+
     // Restore: clears archivedAt.
     const restored = await request(server())
       .patch(`${base}/canary`)

@@ -537,7 +537,9 @@ link (Mailhog in dev).
 | `name` | string | no | New display name. |
 | `archived` | boolean | no | `true` sets `archivedAt`, `false` clears it. |
 
-At least one of `name` / `archived` is required (empty body → `400 CLUMSY_OWL`).
+At least one of `name` / `archived` is required (empty body → `400 CLUMSY_OWL`). Idempotent:
+re-archiving preserves the original `archivedAt`. The archived env's `key` stays reserved, so
+re-creating an env with that key returns `409 NOISY_DUCK` until it is restored.
 
 **Response (200):** the updated environment.
 

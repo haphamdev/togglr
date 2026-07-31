@@ -128,6 +128,11 @@ export function ProjectEnvironmentsRoute() {
             {archiveError}
           </p>
         ) : null}
+        {archive.isSuccess ? (
+          <p role="status" className="text-sm text-green-600">
+            {archive.variables.archived ? "Environment archived." : "Environment restored."}
+          </p>
+        ) : null}
         {environments.isPending ? (
           <p role="status" className="text-sm text-slate-500">
             Loading…
