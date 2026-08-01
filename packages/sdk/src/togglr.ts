@@ -2,25 +2,26 @@ import { evaluate as coreEvaluate } from "@togglr/eval-core";
 import type { EvaluationContext, EvaluationResult, Variation } from "@togglr/shared-types";
 import { RulesetCache } from "./cache";
 import { type ResolvedConfig, resolveConfig, type TogglrConfig } from "./config";
+import { bucketLatency, isErrorReason, noopSink, type TelemetrySink } from "./telemetry";
 import { fetchRuleset, RulesetSchemaError } from "./transport";
 
-/**
- * The public SDK client. Construction kicks off a non-blocking first ruleset fetch and
- * returns immediately — the host boot is never gated on the network. Readiness flips on
- * the first successful fetch; `waitForReady` lets callers optionally await it (bounded,
- * never rejecting), and `close()` tears down every live handle.
- *
- * Polling, resilience/backoff, evaluate, and telemetry are layered on in later tasks; this
- * class owns the lifecycle seam (`#refresh`, `#timer`, `#abort`, ready-waiters) they hook.
- */
 /**
  * Internal, undocumented constructor seam for test determinism. Not re-exported from the
  * package entry point; production callers pass only {@link TogglrConfig}.
  */
 export interface TogglrInternals {
   random?: () => number;
+  now?: () => number;
+  telemetrySink?: TelemetrySink;
 }
 
+/**
+ * The public SDK client. Construction kicks off a non-blocking first ruleset fetch and
+ * returns immediately — the host boot is never gated on the network. Readiness flips on
+ * the first successful fetch; `waitForReady` lets callers optionally await it (bounded,
+ * never rejecting), `evaluate` reads the cached ruleset in-process, a background loop keeps
+ * it fresh (poll + backoff + heal), and `close()` tears down every live handle.
+ */
 export class Togglr {
   #config: ResolvedConfig;
   #cache = new RulesetCache();
@@ -30,12 +31,16 @@ export class Togglr {
   #timer?: NodeJS.Timeout;
   #readyWaiters = new Set<() => void>();
   #random: () => number;
+  #now: () => number;
+  #sink: TelemetrySink;
   #failures = 0;
   #schemaWarned = false;
 
   constructor(config: TogglrConfig, internals: TogglrInternals = {}) {
     this.#config = resolveConfig(config);
     this.#random = internals.random ?? Math.random;
+    this.#now = internals.now ?? (() => performance.now());
+    this.#sink = internals.telemetrySink ?? noopSink;
     // Fire-and-forget: bootstrap runs in the background, never awaited here.
     void this.#refresh();
   }
@@ -136,16 +141,28 @@ export class Togglr {
     defaultValue: Variation,
     typed: boolean,
   ): EvaluationResult {
+    const start = this.#now();
+    let result: EvaluationResult;
     try {
-      const result = coreEvaluate(this.#cache.get(), flagKey, context, defaultValue);
+      result = coreEvaluate(this.#cache.get(), flagKey, context, defaultValue);
       if (typed && typeof result.value !== "boolean") {
-        return { value: defaultValue, reason: "TYPE_MISMATCH" };
+        result = { value: defaultValue, reason: "TYPE_MISMATCH" };
       }
-      return result;
     } catch (err) {
       this.#config.logger.warn("evaluate failed", err);
-      return { value: defaultValue, reason: "SDK_NOT_READY" };
+      result = { value: defaultValue, reason: "SDK_NOT_READY" };
     }
+    // Fire the telemetry seam exactly once per public call, on every outcome. No raw
+    // context leaves the host; latency is bucketed. Phase-1 sink is a no-op.
+    this.#sink({
+      flagKey,
+      variation: result.value,
+      rulesetVersion: this.#cache.get()?.version ?? 0,
+      timestamp: Date.now(),
+      latency: bucketLatency(this.#now() - start),
+      errorFlag: isErrorReason(result.reason),
+    });
+    return result;
   }
 
   /**
