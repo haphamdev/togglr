@@ -1,3 +1,5 @@
+import { evaluate as coreEvaluate } from "@togglr/eval-core";
+import type { EvaluationContext, EvaluationResult, Variation } from "@togglr/shared-types";
 import { RulesetCache } from "./cache";
 import { type ResolvedConfig, resolveConfig, type TogglrConfig } from "./config";
 import { fetchRuleset } from "./transport";
@@ -69,6 +71,43 @@ export class Togglr {
     timer.unref?.();
     this.#readyWaiters.add(finish);
     return promise;
+  }
+
+  /**
+   * Evaluate a flag against the cached ruleset, returning its bare {@link Variation}.
+   * Never throws into the host: an empty/absent cache or any internal error falls back to
+   * `defaultValue`. The full reason matrix (SDK_NOT_READY / FLAG_NOT_FOUND / FLAG_OFF /
+   * MISSING_KEY / …) is produced by `@togglr/eval-core`, not reimplemented here.
+   */
+  evaluate(flagKey: string, context: EvaluationContext, defaultValue: Variation): Variation {
+    return this.#run(flagKey, context, defaultValue, false).value;
+  }
+
+  /**
+   * Boolean-typed convenience over {@link evaluate}. If the resolved variation is not a
+   * boolean (only possible once multivariate lands), falls back to `defaultValue` with a
+   * `TYPE_MISMATCH` reason. Dormant in the boolean-only MVP.
+   */
+  evaluateBool(flagKey: string, context: EvaluationContext, defaultValue: boolean): boolean {
+    return this.#run(flagKey, context, defaultValue, true).value;
+  }
+
+  #run(
+    flagKey: string,
+    context: EvaluationContext,
+    defaultValue: Variation,
+    typed: boolean,
+  ): EvaluationResult {
+    try {
+      const result = coreEvaluate(this.#cache.get(), flagKey, context, defaultValue);
+      if (typed && typeof result.value !== "boolean") {
+        return { value: defaultValue, reason: "TYPE_MISMATCH" };
+      }
+      return result;
+    } catch (err) {
+      this.#config.logger.warn("evaluate failed", err);
+      return { value: defaultValue, reason: "SDK_NOT_READY" };
+    }
   }
 
   /**
