@@ -1,6 +1,8 @@
 import type { RouteObject } from "react-router-dom";
 import { RequireAuth } from "../auth/require-auth";
 import { EnvironmentKeysRoute } from "../routes/environment-keys";
+import { FlagEditorRoute } from "../routes/flag-editor";
+import { FlagsListRoute } from "../routes/flags-list";
 import { InviteAcceptRoute } from "../routes/invite-accept";
 import { LoginRoute } from "../routes/login";
 import { OrgMembersRoute } from "../routes/org-members";
@@ -32,6 +34,14 @@ export const appRoutes: RouteObject[] = [
       {
         path: "orgs/:orgSlug/projects/:projectKey/environments/:envKey",
         element: <EnvironmentKeysRoute />,
+      },
+      {
+        path: "orgs/:orgSlug/projects/:projectKey/environments/:envKey/flags",
+        element: <FlagsListRoute />,
+      },
+      {
+        path: "orgs/:orgSlug/projects/:projectKey/environments/:envKey/flags/:flagKey",
+        element: <FlagEditorRoute />,
       },
     ],
   },

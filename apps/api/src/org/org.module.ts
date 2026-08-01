@@ -60,6 +60,7 @@ import { TransactionInterceptor } from "./tenant/transaction.interceptor";
     MembershipQueryService,
     InvitesService,
     SdkKeyGuard,
+    SdkKeyService,
   ],
 })
 export class OrgModule {}
