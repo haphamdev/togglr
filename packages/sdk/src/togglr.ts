@@ -29,9 +29,10 @@ export class Togglr {
   }
 
   /**
-   * One conditional fetch + forward-only swap. A 200 swaps and marks ready; a 304 means
-   * last-known is already current, so it just marks ready. Failures leave readiness as-is
-   * (a failed first fetch stays not-ready) and are logged. No rescheduling yet (Task 4).
+   * One conditional fetch + forward-only swap, then reschedule the next poll. A 200 swaps
+   * and marks ready; a 304 means last-known is already current, so it just marks ready. A
+   * failure leaves readiness as-is (a failed first fetch stays not-ready) and is logged;
+   * the loop keeps polling regardless. Backoff overrides the error-branch delay in Task 5.
    */
   async #refresh(): Promise<void> {
     if (this.#closed) return;
@@ -43,9 +44,15 @@ export class Togglr {
       if (result.status === 200) this.#cache.set(result.ruleset, result.etag);
       this.#markReady();
     } catch (err) {
-      if (this.#closed) return;
-      this.#config.logger.warn("ruleset refresh failed", err);
+      if (!this.#closed) this.#config.logger.warn("ruleset refresh failed", err);
     }
+    this.#scheduleNext(this.#config.pollIntervalMs);
+  }
+
+  #scheduleNext(delayMs: number): void {
+    if (this.#closed) return;
+    this.#timer = setTimeout(() => void this.#refresh(), delayMs);
+    this.#timer.unref?.();
   }
 
   #markReady(): void {
