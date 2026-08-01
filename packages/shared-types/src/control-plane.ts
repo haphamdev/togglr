@@ -1,4 +1,4 @@
-import type { Variation } from "./index";
+import type { Rule, Variation } from "./index";
 
 // Control-plane wire contract shared by the API and web app (and, later, tooling).
 // Types only — no runtime code — matching the package invariant. Shapes mirror
@@ -118,4 +118,27 @@ export interface FlagEnvConfigSummary {
 /** A flag plus its per-environment config summaries (list/detail/create shape). */
 export interface FlagWithEnvironments extends Flag {
   environments: FlagEnvConfigSummary[];
+}
+
+/** A flag's config in one environment, as returned by GET …/config. */
+export interface FlagEnvConfigDetail {
+  enabled: boolean;
+  defaultVariation: Variation;
+  rules: Rule[];
+  configVersion: number;
+  updatedAt: string;
+}
+
+/** PATCH …/config body. `expectedConfigVersion` gates optimistic concurrency; a present
+ *  `rules` replaces the ordered list wholesale. */
+export interface FlagEnvConfigUpdate {
+  expectedConfigVersion: number;
+  enabled?: boolean;
+  defaultVariation?: Variation;
+  rules?: Rule[];
+}
+
+/** PATCH …/config success shape — detail plus the bumped environment ruleset version. */
+export interface FlagEnvConfigUpdated extends FlagEnvConfigDetail {
+  rulesetVersion: number;
 }

@@ -98,6 +98,19 @@ export interface FlagEnvConfigsTable {
   updated_at: Generated<Date>;
 }
 
+export interface AuditLogsTable {
+  id: Generated<string>;
+  organization_id: string;
+  actor_user_id: string | null;
+  action: string;
+  target_type: string | null;
+  target_id: string | null;
+  environment_id: string | null;
+  before: unknown | null;
+  after: unknown | null;
+  created_at: Generated<Date>;
+}
+
 export interface Database {
   users: UsersTable;
   organizations: OrganizationsTable;
@@ -108,6 +121,7 @@ export interface Database {
   sdk_keys: SdkKeysTable;
   flags: FlagsTable;
   flag_env_configs: FlagEnvConfigsTable;
+  audit_logs: AuditLogsTable;
 }
 
 /** DI token for the injectable Kysely<Database> instance. */
