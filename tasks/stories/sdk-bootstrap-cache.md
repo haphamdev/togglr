@@ -59,6 +59,11 @@ As a developer integrating the SDK, I want `new Togglr({ sdkKey })` to fetch and
 - **When** bootstrap completes
 - **Then** the cached ruleset is exactly that environment's ruleset (not any other env). [ev:113]
 
+### AC9: Lifecycle close()
+- **Given** a constructed SDK (ready or not)
+- **When** `close()` is called
+- **Then** it clears the polling interval, aborts any in-flight fetch, and marks the instance closed so no further polls run; the process retains no live togglr timers afterward (clean test teardown), and later `evaluate` calls still return the caller `defaultValue` (never throw).
+
 ## Notes
 
 Depends on `ruleset-fetch-endpoint`, `org-sdk-keys`.

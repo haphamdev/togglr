@@ -1,6 +1,6 @@
 ---
 title: Local-Evaluation SDK
-status: draft
+status: approved
 owner: hapham
 date: 2026-07-28
 parent: docs/specs/togglr-platform.md
@@ -34,8 +34,11 @@ real.
   wires it) so the hot path stays forward-compatible.
 - Polling refresh with a version check (MVP freshness mechanism).
 - Resilience: serve last-known ruleset on network failure, retry with backoff.
+- Lifecycle teardown: `close()` stops the polling loop, aborts any in-flight fetch, and marks
+  the instance closed (later also flushes telemetry) — for graceful shutdown and clean test teardown.
 - Benchmark + load test proving p99 `evaluate()` < 5ms as a Phase-1 acceptance gate.
-- Deterministic sticky bucketing shared with the rollout logic.
+- Verify (not implement) deterministic sticky bucketing: the algorithm is inherited from
+  `eval-core`; the SDK benchmark proves stickiness across rollout-percentage increases.
 
 ### Excluded
 
@@ -63,6 +66,8 @@ real.
   SDK reconnects/refreshes on recovery (version check heals missed changes).
 - A published benchmark shows p99 in-process evaluate latency < 5ms.
 - Bucketing is deterministic and sticky across rollout-percentage increases.
+- `close()` stops the polling loop and releases resources — a constructed SDK leaves no live
+  timers after close (graceful shutdown; clean test teardown).
 
 ## Stories
 
@@ -75,6 +80,8 @@ real.
 
 ## Open Questions
 
-- [ ] Polling interval default and configurability.
-- [ ] `waitForReady` default timeout value.
-- [ ] SDK config surface (timeouts, base URL, logging hooks).
+- [x] Polling interval default and configurability → 30 s default, configurable via `pollIntervalMs` (sdk-polling-refresh).
+- [x] `waitForReady` default timeout → 5 s, non-rejecting (sdk-bootstrap-cache).
+- [x] SDK config surface → `{ sdkKey, baseUrl, pollIntervalMs, requestTimeoutMs, logger }`, logger silent by default (sdk-bootstrap-cache).
+- [x] Benchmark target scale → 50 flags × ≤10 rules over 1M contexts, p99 < 5 ms; N-SDK/throughput load test deferred to Phase 2 (sdk-benchmark-load-test).
+- [x] Telemetry event shape → `{ flagKey, variation, rulesetVersion, timestamp, latency (bucketed), errorFlag }` (sdk-telemetry-seam).
