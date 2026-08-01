@@ -1,6 +1,6 @@
 ---
 title: Deterministic sticky bucketing primitive
-status: draft
+status: done
 owner: hapham
 date: 2026-07-31
 parent: stories/flag-eval-core-engine.md
