@@ -1,6 +1,6 @@
 ---
 title: Flags schema migration (flags + flag_env_configs)
-status: draft
+status: done
 owner: hapham
 date: 2026-08-01
 parent: stories/flag-crud.md
