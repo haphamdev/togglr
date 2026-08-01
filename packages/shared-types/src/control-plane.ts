@@ -86,3 +86,11 @@ export interface SdkKeySecret {
   expiresAt: string | null;
   createdAt: string;
 }
+
+/**
+ * Monotonic per-(flag, environment) counter, bumped on each edit to that flag's
+ * config; drives optimistic-concurrency 409s in Flag Authoring. Independent of
+ * `RulesetVersion` (per-environment, bumped on any change in the environment) —
+ * the two are never conflated.
+ */
+export type ConfigVersion = number;

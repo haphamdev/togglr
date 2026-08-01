@@ -1,6 +1,6 @@
 ---
 title: Ruleset Delivery & Contract
-status: draft
+status: approved
 owner: hapham
 date: 2026-07-28
 parent: docs/specs/togglr-platform.md
@@ -33,6 +33,8 @@ the same language; getting it wrong forces re-cuts across every other epic.
   current ruleset version; authenticated by the **SDK-key guard consumed from Org
   Workspace & Isolation**; env-scoped.
 - A cache-ready ruleset representation (so Real-Time's Redis cache can front it later).
+- **Payload schema version** (`schemaVersion`, starts at 1): a forward-compat field on the
+  ruleset so the shape can evolve without breaking older SDKs (degrade-not-crash).
 
 ### Excluded
 
@@ -48,8 +50,10 @@ the same language; getting it wrong forces re-cuts across every other epic.
 ## Dependencies
 
 - **Platform Foundation** — `packages/shared-types` and `eval-core` scaffolding.
-- **Flag Authoring** — provides the persisted flag/rule/rollout config this epic
-  serializes and serves.
+- **Flag Authoring** — a *split* dependency, not a cycle: the **contract** (ruleset shape +
+  version model) has no dependency on Flag Authoring and is a prerequisite *for* it; only the
+  **serving endpoint** depends on Flag Authoring's persisted config. Ordering:
+  contract → Flag Authoring → fetch endpoint.
 - **Org Workspace & Isolation** — consumes its SDK-key validation guard to authenticate
   fetch requests; ruleset is environment-scoped and RLS-enforced.
 
@@ -64,6 +68,11 @@ the same language; getting it wrong forces re-cuts across every other epic.
   the per-flag config version is independent and drives concurrency.
 - The served representation is cache-friendly (stable, serializable) for later Redis
   fronting.
+- Polling is a conditional GET: the endpoint returns `ETag: "<version>"`, answers a matching
+  `If-None-Match` with `304` (empty body) and a stale one with `200` + the new ruleset — one
+  endpoint serving both bootstrap and refresh.
+- Under a datastore outage the endpoint fails closed with `503 DIZZY_OWL` (no Phase-1 cache),
+  and the SDK falls back to its last-known ruleset.
 
 ## Stories
 
@@ -71,9 +80,16 @@ the same language; getting it wrong forces re-cuts across every other epic.
 - [Ruleset-fetch endpoint (SDK hot path)](../stories/ruleset-fetch-endpoint.md) — M
 - [Cache-ready ruleset representation](../stories/ruleset-cache-ready-representation.md) — S
 
-## Open Questions
+## Resolved Decisions
 
-- [ ] Ruleset transport on fetch: full snapshot vs diff (spec lean: full snapshot).
-- [ ] Ruleset version type: integer counter vs monotonic timestamp/ULID.
-- [ ] Payload versioning/compatibility strategy as the ruleset shape evolves (e.g. schema
-      version field for forward-compat with older SDKs).
+Resolved against the approved [Ruleset & Evaluation Engine + SDK](../../docs/design/ruleset-evaluation-sdk.md)
+design and the parent spec; the child stories carry the detailed ACs.
+
+- [x] **Ruleset transport:** **full snapshot** on every fetch, never a diff.
+      ([ruleset-evaluation-sdk.md:263]; spec `togglr-platform.md:161`)
+- [x] **Ruleset version type:** a **monotonic integer** per-environment counter (not a
+      timestamp/ULID). ([ruleset-evaluation-sdk.md:55,111]; `architecture-overview.md:120-134`)
+- [x] **Payload compatibility:** a **`schemaVersion`** field (starts at 1) with
+      **degrade-not-crash** semantics — an older SDK holds its last-known ruleset on an
+      unparseable newer payload, or stays not-ready (`SDK_NOT_READY`) on first bootstrap.
+      ([ruleset-evaluation-sdk.md:97-107])

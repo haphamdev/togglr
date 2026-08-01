@@ -59,6 +59,26 @@ consumers by the Ruleset Delivery & Contract epic.
 - **Ruleset Delivery & Contract** — defines the ruleset shape and version model that
   authored config must conform to.
 
+## Unblocks (do not miss)
+
+The **contract** slice of Ruleset Delivery & Contract is complete (story
+`ruleset-shape-version-model` is `done`: ruleset shape + version model, incl.
+per-flag `ConfigVersion` and per-environment `RulesetVersion`, live in
+`packages/shared-types`). Its remaining two stories are **blocked on this epic**
+because they need persisted flag config (a flags/rules schema + write path that
+does not exist yet — migrations stop at `1730000000003_environment-archive.js`,
+and there is no flag module under `apps/api/src`). Once Flag Authoring lands the
+flag/rule persistence and ruleset-version bump, resume and complete:
+
+- [ruleset-fetch-endpoint](../stories/ruleset-fetch-endpoint.md) — serves the
+  persisted ruleset snapshot + current `RulesetVersion` (ETag/304, SDK-key guard,
+  `503 DIZZY_OWL` fail-closed).
+- [ruleset-cache-ready-representation](../stories/ruleset-cache-ready-representation.md)
+  — stable, serializable representation for later Redis fronting.
+
+This epic's mutations MUST bump the per-environment `RulesetVersion` (owned by
+Ruleset Delivery & Contract) so those two stories have a correct version to serve.
+
 ## Acceptance Criteria (Epic-Level)
 
 - An admin can create, edit, toggle, and delete a boolean flag with a default and
