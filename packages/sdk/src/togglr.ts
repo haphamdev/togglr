@@ -2,7 +2,7 @@ import { evaluate as coreEvaluate } from "@togglr/eval-core";
 import type { EvaluationContext, EvaluationResult, Variation } from "@togglr/shared-types";
 import { RulesetCache } from "./cache";
 import { type ResolvedConfig, resolveConfig, type TogglrConfig } from "./config";
-import { fetchRuleset } from "./transport";
+import { fetchRuleset, RulesetSchemaError } from "./transport";
 
 /**
  * The public SDK client. Construction kicks off a non-blocking first ruleset fetch and
@@ -13,6 +13,14 @@ import { fetchRuleset } from "./transport";
  * Polling, resilience/backoff, evaluate, and telemetry are layered on in later tasks; this
  * class owns the lifecycle seam (`#refresh`, `#timer`, `#abort`, ready-waiters) they hook.
  */
+/**
+ * Internal, undocumented constructor seam for test determinism. Not re-exported from the
+ * package entry point; production callers pass only {@link TogglrConfig}.
+ */
+export interface TogglrInternals {
+  random?: () => number;
+}
+
 export class Togglr {
   #config: ResolvedConfig;
   #cache = new RulesetCache();
@@ -21,18 +29,24 @@ export class Togglr {
   #abort = new AbortController();
   #timer?: NodeJS.Timeout;
   #readyWaiters = new Set<() => void>();
+  #random: () => number;
+  #failures = 0;
+  #schemaWarned = false;
 
-  constructor(config: TogglrConfig) {
+  constructor(config: TogglrConfig, internals: TogglrInternals = {}) {
     this.#config = resolveConfig(config);
+    this.#random = internals.random ?? Math.random;
     // Fire-and-forget: bootstrap runs in the background, never awaited here.
     void this.#refresh();
   }
 
   /**
-   * One conditional fetch + forward-only swap, then reschedule the next poll. A 200 swaps
-   * and marks ready; a 304 means last-known is already current, so it just marks ready. A
-   * failure leaves readiness as-is (a failed first fetch stays not-ready) and is logged;
-   * the loop keeps polling regardless. Backoff overrides the error-branch delay in Task 5.
+   * One conditional fetch + forward-only swap, then reschedule the next poll.
+   *
+   * Success (200 or 304): clear the failure counter, reset the schema-warn dedupe, mark
+   * ready, and poll again at the normal cadence — a newer 200 heals any missed changes.
+   * Failure: never clear the cache (last-known keeps serving), count the failure, log
+   * (schema errors deduped to once), and reschedule with exponential backoff + jitter.
    */
   async #refresh(): Promise<void> {
     if (this.#closed) return;
@@ -42,11 +56,28 @@ export class Togglr {
         signal: this.#abort.signal,
       });
       if (result.status === 200) this.#cache.set(result.ruleset, result.etag);
+      this.#failures = 0;
+      this.#schemaWarned = false;
       this.#markReady();
+      this.#scheduleNext(this.#config.pollIntervalMs);
     } catch (err) {
-      if (!this.#closed) this.#config.logger.warn("ruleset refresh failed", err);
+      if (this.#closed) return;
+      this.#failures += 1;
+      if (err instanceof RulesetSchemaError) {
+        if (!this.#schemaWarned) {
+          this.#config.logger.warn("ruleset schema unsupported; holding last-known", err);
+          this.#schemaWarned = true;
+        }
+      } else {
+        this.#config.logger.warn("ruleset refresh failed", err);
+      }
+      this.#scheduleNext(this.#backoffDelay());
     }
-    this.#scheduleNext(this.#config.pollIntervalMs);
+  }
+
+  /** Full-jitter exponential backoff: random() * min(cap, base * 2^(failures - 1)). */
+  #backoffDelay(): number {
+    return this.#random() * Math.min(60_000, 1_000 * 2 ** (this.#failures - 1));
   }
 
   #scheduleNext(delayMs: number): void {
