@@ -4,12 +4,21 @@ import { AuthModule } from "./auth/auth.module";
 import { AllExceptionsFilter } from "./common/all-exceptions.filter";
 import { AppConfigModule } from "./config/app-config.module";
 import { DbModule } from "./db/db.module";
+import { FlagModule } from "./flags/flag.module";
 import { HealthModule } from "./health/health.module";
 import { OrgModule } from "./org/org.module";
 import { RedisModule } from "./redis/redis.module";
 
 @Module({
-  imports: [AppConfigModule, DbModule, RedisModule, HealthModule, AuthModule, OrgModule],
+  imports: [
+    AppConfigModule,
+    DbModule,
+    RedisModule,
+    HealthModule,
+    AuthModule,
+    OrgModule,
+    FlagModule,
+  ],
   providers: [{ provide: APP_FILTER, useClass: AllExceptionsFilter }],
 })
 export class AppModule {}

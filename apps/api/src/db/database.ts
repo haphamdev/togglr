@@ -75,6 +75,29 @@ export interface SdkKeysTable {
   created_at: Generated<Date>;
 }
 
+export interface FlagsTable {
+  id: Generated<string>;
+  organization_id: string;
+  project_id: string;
+  key: string;
+  description: string | null;
+  type: Generated<string>;
+  archived_at: Generated<Date | null>;
+  created_at: Generated<Date>;
+}
+
+export interface FlagEnvConfigsTable {
+  id: Generated<string>;
+  organization_id: string;
+  flag_id: string;
+  environment_id: string;
+  enabled: Generated<boolean>;
+  default_variation: Generated<unknown>;
+  rules: Generated<unknown>;
+  config_version: Generated<number>;
+  updated_at: Generated<Date>;
+}
+
 export interface Database {
   users: UsersTable;
   organizations: OrganizationsTable;
@@ -83,6 +106,8 @@ export interface Database {
   projects: ProjectsTable;
   environments: EnvironmentsTable;
   sdk_keys: SdkKeysTable;
+  flags: FlagsTable;
+  flag_env_configs: FlagEnvConfigsTable;
 }
 
 /** DI token for the injectable Kysely<Database> instance. */

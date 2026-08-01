@@ -1,3 +1,5 @@
+import type { Variation } from "./index";
+
 // Control-plane wire contract shared by the API and web app (and, later, tooling).
 // Types only — no runtime code — matching the package invariant. Shapes mirror
 // docs/api/togglr-api.md and docs/design/control-plane-data-model.md.
@@ -94,3 +96,26 @@ export interface SdkKeySecret {
  * the two are never conflated.
  */
 export type ConfigVersion = number;
+
+/** A flag's project-scoped definition (key + type are immutable after create). */
+export interface Flag {
+  key: string;
+  description: string | null;
+  type: "boolean";
+  archivedAt: string | null;
+  createdAt: string;
+}
+
+/** One flag's config state in a single environment, as a list/detail summary. */
+export interface FlagEnvConfigSummary {
+  envKey: string;
+  enabled: boolean;
+  defaultVariation: Variation;
+  ruleCount: number;
+  configVersion: number;
+}
+
+/** A flag plus its per-environment config summaries (list/detail/create shape). */
+export interface FlagWithEnvironments extends Flag {
+  environments: FlagEnvConfigSummary[];
+}
