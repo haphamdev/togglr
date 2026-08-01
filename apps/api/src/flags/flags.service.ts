@@ -156,9 +156,14 @@ export class FlagsService {
           .execute();
       }
 
-      return (
-        await this.loadFlags(trx, projectId, { includeArchived: true, flagKey: input.key })
-      )[0];
+      const [created] = await this.loadFlags(trx, projectId, {
+        includeArchived: true,
+        flagKey: input.key,
+      });
+      // Invariant: a just-created flag always has ≥1 seeded env config to summarize.
+      // Unreachable unless the project has zero environments; surfaces as 503 via guarded().
+      if (!created) throw new Error("flag created without an environment config to summarize");
+      return created;
     });
   }
 
@@ -184,7 +189,7 @@ export class FlagsService {
   async patch(
     projectKey: string,
     flagKey: string,
-    patch: { description?: string; archived?: boolean },
+    patch: { description?: string | null; archived?: boolean },
   ): Promise<FlagWithEnvironments> {
     return this.guarded(async () => {
       const trx = this.tenant.trx;
@@ -195,6 +200,8 @@ export class FlagsService {
         // Re-archiving preserves the original archived_at (COALESCE); restore clears it.
         set.archived_at = patch.archived ? sql<Date>`coalesce(archived_at, now())` : null;
       }
+      // Nothing to change (the controller's Zod refine normally prevents this).
+      if (Object.keys(set).length === 0) return this.get(projectKey, flagKey);
       const updated = await trx
         .updateTable("flags")
         .set(set)
@@ -203,7 +210,9 @@ export class FlagsService {
         .returning(["id"])
         .executeTakeFirst();
       if (!updated) throw new DomainException("LOST_OWL", 404, "No such flag in this project");
-      return (await this.loadFlags(trx, projectId, { includeArchived: true, flagKey }))[0];
+      const [flag] = await this.loadFlags(trx, projectId, { includeArchived: true, flagKey });
+      if (!flag) throw new DomainException("LOST_OWL", 404, "No such flag in this project");
+      return flag;
     });
   }
 

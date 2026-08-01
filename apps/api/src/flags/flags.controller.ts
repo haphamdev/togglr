@@ -28,7 +28,7 @@ const CreateFlagSchema = z.object({
 type CreateFlagBody = z.infer<typeof CreateFlagSchema>;
 
 const PatchFlagSchema = z
-  .object({ description: z.string().optional(), archived: z.boolean().optional() })
+  .object({ description: z.string().nullable().optional(), archived: z.boolean().optional() })
   .refine((v) => v.description !== undefined || v.archived !== undefined, {
     message: "description or archived is required",
   });

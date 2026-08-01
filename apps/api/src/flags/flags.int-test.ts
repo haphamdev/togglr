@@ -219,6 +219,30 @@ describe("Flags CRUD (integration)", () => {
     expect(renamedGet.status).toBe(404);
   });
 
+  it("PATCH sets description and can clear it back to null", async () => {
+    const owner = await register();
+    const { slug } = await makeOrg(owner);
+    const projectKey = await makeProject(owner, slug);
+    await createFlag(owner, slug, projectKey, { key: "desc-flag" }).expect(201);
+    const base = `/api/v1/orgs/${slug}/projects/${projectKey}/flags`;
+
+    const set = await request(server())
+      .patch(`${base}/desc-flag`)
+      .set("Cookie", owner.cookie)
+      .set("X-CSRF-Token", owner.csrf)
+      .send({ description: "gradual rollout" });
+    expect(set.status).toBe(200);
+    expect(set.body.flag.description).toBe("gradual rollout");
+
+    const cleared = await request(server())
+      .patch(`${base}/desc-flag`)
+      .set("Cookie", owner.cookie)
+      .set("X-CSRF-Token", owner.csrf)
+      .send({ description: null });
+    expect(cleared.status).toBe(200);
+    expect(cleared.body.flag.description).toBeNull();
+  });
+
   it("AC7: GET/PATCH unknown flag → 404 LOST_OWL", async () => {
     const owner = await register();
     const { slug } = await makeOrg(owner);
