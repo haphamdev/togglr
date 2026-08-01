@@ -1,6 +1,6 @@
 ---
 title: Flag config DTOs in shared-types
-status: draft
+status: done
 owner: hapham
 date: 2026-08-01
 parent: stories/flag-config-edit.md
