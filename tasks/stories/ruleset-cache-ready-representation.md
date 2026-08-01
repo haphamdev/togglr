@@ -1,6 +1,6 @@
 ---
 title: Cache-ready ruleset representation
-status: approved
+status: done
 owner: hapham
 date: 2026-07-30
 parent: tasks/epics/ruleset-delivery-contract.md
