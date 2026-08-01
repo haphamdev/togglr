@@ -8,6 +8,7 @@ import { FlagModule } from "./flags/flag.module";
 import { HealthModule } from "./health/health.module";
 import { OrgModule } from "./org/org.module";
 import { RedisModule } from "./redis/redis.module";
+import { SdkModule } from "./sdk/sdk.module";
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { RedisModule } from "./redis/redis.module";
     AuthModule,
     OrgModule,
     FlagModule,
+    SdkModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: AllExceptionsFilter }],
 })
