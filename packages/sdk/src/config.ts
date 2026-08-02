@@ -7,7 +7,9 @@ export interface Logger {
 export interface TogglrConfig {
   sdkKey: string;
   baseUrl?: string;
+  /** Background poll cadence in ms. Default 30_000; must be >= 1000 when provided. */
   pollIntervalMs?: number;
+  /** Per-request timeout in ms. Default 5_000; must be >= 1 when provided. */
   requestTimeoutMs?: number;
   logger?: Logger;
 }
@@ -25,11 +27,18 @@ export interface ResolvedConfig {
 export const SILENT_LOGGER: Logger = { warn() {} };
 
 /**
- * Validate + fill defaults. The only place the SDK throws on construction: a falsy
- * `sdkKey` is a programmer error, not a runtime condition to swallow.
+ * Validate + fill defaults. Construction is the only place the SDK throws: a falsy
+ * `sdkKey` or an out-of-range numeric option is a programmer error caught up front, not a
+ * runtime condition to swallow. The `!(x >= floor)` form also rejects `NaN`.
  */
 export function resolveConfig(config: TogglrConfig): ResolvedConfig {
   if (!config.sdkKey) throw new Error("Togglr: sdkKey is required");
+  if (config.pollIntervalMs !== undefined && !(config.pollIntervalMs >= 1_000)) {
+    throw new Error("Togglr: pollIntervalMs must be >= 1000");
+  }
+  if (config.requestTimeoutMs !== undefined && !(config.requestTimeoutMs >= 1)) {
+    throw new Error("Togglr: requestTimeoutMs must be >= 1");
+  }
   return {
     sdkKey: config.sdkKey,
     baseUrl: config.baseUrl ?? "http://localhost:3100",
