@@ -85,6 +85,19 @@ describe("fetchRuleset", () => {
     await expect(fetchRuleset(config)).rejects.toBeInstanceOf(RulesetSchemaError);
   });
 
+  it("throws RulesetSchemaError on a structurally malformed body", async () => {
+    const cases = [
+      { schemaVersion: 1, flags: [] }, // missing version
+      { version: 1, flags: [] }, // missing schemaVersion
+      { version: 1, schemaVersion: 1 }, // missing flags
+      { version: 1, schemaVersion: 1, flags: "nope" }, // flags not an array
+    ];
+    for (const body of cases) {
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(body, { etag: '"1"' })));
+      await expect(fetchRuleset(config)).rejects.toBeInstanceOf(RulesetSchemaError);
+    }
+  });
+
   it("aborts and rejects when the request outlives requestTimeoutMs", async () => {
     vi.stubGlobal("fetch", (_url: string, init: { signal: AbortSignal }) => {
       const { promise, reject } = Promise.withResolvers<Response>();

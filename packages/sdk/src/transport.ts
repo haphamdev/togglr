@@ -7,7 +7,7 @@ export const SUPPORTED_SCHEMA_VERSION = 1;
 /** Any transport-level failure: non-2xx/304 status, network error, or timeout. */
 export class RulesetFetchError extends Error {}
 
-/** Payload the SDK cannot trust: unparseable body or a too-new `schemaVersion`. */
+/** Payload the SDK cannot trust: unparseable, structurally invalid, or too-new schemaVersion. */
 export class RulesetSchemaError extends RulesetFetchError {}
 
 /** Discriminated transport outcome. A 304 carries nothing (last-known stays authoritative). */
@@ -36,6 +36,13 @@ export async function fetchRuleset(
     ruleset = (await res.json()) as Ruleset;
   } catch {
     throw new RulesetSchemaError("ruleset body is not valid JSON");
+  }
+  if (
+    typeof ruleset.version !== "number" ||
+    typeof ruleset.schemaVersion !== "number" ||
+    !Array.isArray(ruleset.flags)
+  ) {
+    throw new RulesetSchemaError("malformed ruleset payload");
   }
   if (ruleset.schemaVersion > SUPPORTED_SCHEMA_VERSION) {
     throw new RulesetSchemaError(`unsupported schemaVersion ${ruleset.schemaVersion}`);
